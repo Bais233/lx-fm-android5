@@ -105,6 +105,7 @@ class DedicatedApi(private val client: OkHttpClient) {
                 name = title.trim(),
                 url = url,
                 alternateUrl = alt,
+                icon = o.str("image")?.let { if (it.startsWith("http://")) it.replace("http://", "https://") else it },
                 program = program,
                 dedicated = true,
             )
