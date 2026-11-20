@@ -5,6 +5,7 @@ data class Station(
     val name: String,
     val url: String,
     val alternateUrl: String? = null,
+    val icon: String? = null,
     val region: String = "",
     val program: String? = null,
     val bitrate: Int = 0,
