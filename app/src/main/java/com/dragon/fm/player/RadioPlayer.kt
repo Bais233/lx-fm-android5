@@ -34,6 +34,10 @@ class RadioPlayer(context: Context) {
     val state: StateFlow<State> = _state
 
     private var retried = false
+    
+    private var queue: List<Station> = emptyList()
+    var index: Int = 0
+        private set
 
     init {
         exoPlayer.addListener(object : Player.Listener {
@@ -54,6 +58,24 @@ class RadioPlayer(context: Context) {
     fun play(station: Station) {
         retried = false
         load(station, station.url)
+    }
+
+    fun playList(list: List<Station>, position: Int) {
+        queue = list
+        index = position.coerceIn(0, (list.size - 1).coerceAtLeast(0))
+        list.getOrNull(index)?.let { play(it) }
+    }
+
+    fun next() {
+        if (queue.isEmpty()) return
+        index = (index + 1) % queue.size
+        play(queue[index])
+    }
+
+    fun previous() {
+        if (queue.isEmpty()) return
+        index = (index - 1 + queue.size) % queue.size
+        play(queue[index])
     }
 
     fun toggle() {
