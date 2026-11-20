@@ -16,14 +16,25 @@ android {
         versionName = "1.0.0-5.1"
     }
 
+    signingConfigs {
+        create("lite") {
+            storeFile = file("lxfm5.jks")
+            storePassword = "lxfm5pass"
+            keyAlias = "lxfm5"
+            keyPassword = "lxfm5pass"
+            // 5.1（API 22）只认 v1 签名
+            enableV1Signing = true
+            enableV2Signing = true
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            // 自用精简版：debug 签名即可（v1+v2 都签，5.1 认 v1）
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("lite")
         }
         debug {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("lite")
         }
     }
 
@@ -40,6 +51,12 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.11"
     }
+    lint {
+        // 本机 SDK 是用解压包手工装的，没有完整仓库元数据，lintVital 会报表 target 找不到
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
