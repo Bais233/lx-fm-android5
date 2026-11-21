@@ -44,6 +44,11 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+        freeCompilerArgs += listOf(
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+            "-opt-in=androidx.media3.common.util.UnstableApi",
+        )
     }
     buildFeatures {
         compose = true
@@ -73,6 +78,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.media:media:1.7.0")
     implementation("androidx.media3:media3-exoplayer:1.3.1")
     // 电台流多为 HLS(.m3u8)，不装这两个模块 setMediaItem 会直接抛
     implementation("androidx.media3:media3-exoplayer-hls:1.3.1")
