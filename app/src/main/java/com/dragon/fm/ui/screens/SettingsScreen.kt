@@ -189,12 +189,12 @@ fun SettingsScreen(
 
     val updateCheckResult by viewModel.updateCheckResult.collectAsState()
     val debugModeEnabled by viewModel.debugModeEnabled.collectAsState()
-    val debugTapCount by viewModel.debugVersionTapCount.collectAsState()
+    val debugTapCount = viewModel.debugVersionTapCount
     val playerDebugState by viewModel.playerState.collectAsState()
 
     LaunchedEffect(debugTapCount) {
         if (debugTapCount in 2..4) {
-            Toast.makeText(context, "再点 ${5 - debugTapCount} 次开启开发者模式", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "再点 " + (5 - debugTapCount) + " 次开启开发者模式", Toast.LENGTH_SHORT).show()
         }
     }
 
