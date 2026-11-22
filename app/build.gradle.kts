@@ -12,8 +12,8 @@ android {
         // Android 5.1 = API 22
         minSdk = 22
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0-5.1"
+        versionCode = 2
+        versionName = "1.0.1-5.1"
     }
 
     signingConfigs {
