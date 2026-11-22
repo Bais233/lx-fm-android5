@@ -6,6 +6,8 @@ import com.dragon.fm.data.model.SubtitleFontSize
 import com.dragon.fm.data.model.SwipeGestureAction
 import com.dragon.fm.ui.components.SquareAlbumCover
 import com.dragon.fm.ui.components.VinylRecordDisc
+import com.dragon.fm.ui.components.LiveLyricsCard
+import com.dragon.fm.ui.components.SingleLineLyricBar
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
@@ -3888,8 +3890,6 @@ private fun PortraitFlowContent(
                                 val isFav = favoriteIds.contains(station.id)
                                 val voteDisplay = if (station.votes > 1000) "${station.votes / 1000}k" else "${station.votes}"
                                 val isFxActive = soundEffectMode != com.dragon.fm.player.SoundEffectMode.ORIGINAL
-
-                                                                }
 
                                 for (btn in quickActionButtons) {
                                     Box(
