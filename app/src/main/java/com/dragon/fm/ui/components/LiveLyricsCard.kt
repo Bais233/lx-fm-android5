@@ -62,7 +62,7 @@ fun LiveLyricsCard(
     val listState = rememberLazyListState()
     val interactionSource = remember { MutableInteractionSource() }
     val activeFontSize = (fontSizeOption.activeSp + if (isLandscape) 0f else 2f).sp
-    val historyFontSize = fontSizeOption.idleSp.sp
+    val historyFontSize = fontSizeOption.historySp.sp
 
     LaunchedEffect(songLyricState.currentLineIndex, songLyricState.lyrics) {
         if (songLyricState.lyrics.isNotEmpty()) {

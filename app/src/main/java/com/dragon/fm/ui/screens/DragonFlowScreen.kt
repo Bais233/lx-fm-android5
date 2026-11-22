@@ -4,8 +4,6 @@ import com.dragon.fm.data.model.PlayerCoverStyle
 import com.dragon.fm.data.model.QuickActionButton
 import com.dragon.fm.data.model.SubtitleFontSize
 import com.dragon.fm.data.model.SwipeGestureAction
-import com.dragon.fm.ui.components.LiveLyricsCard
-import com.dragon.fm.ui.components.SingleLineLyricBar
 import com.dragon.fm.ui.components.SquareAlbumCover
 import com.dragon.fm.ui.components.VinylRecordDisc
 import androidx.compose.animation.core.Animatable
@@ -548,8 +546,6 @@ fun DragonFlowScreen(
 
             // Tablet / Foldable / Landscape console mode
 
-            val isLyricsModeActive by viewModel.isLyricsModeActive.collectAsState()
-            val songLyricState by viewModel.songLyricState.collectAsState()
             val playerCoverStyle by viewModel.playerCoverStyle.collectAsState()
             val showChannelTags by viewModel.showChannelTags.collectAsState()
             val subtitleFontSizeOption by viewModel.subtitleFontSizeOption.collectAsState()
@@ -568,17 +564,11 @@ fun DragonFlowScreen(
                 stationAmbientColors = stationAmbientColors,
                 isDark = isDark,
                 isDefaultBg = isDefaultBg,
-                songLyricState = songLyricState,
-                isLyricsModeActive = isLyricsModeActive,
                 playerCoverStyle = playerCoverStyle,
                 showChannelTags = showChannelTags,
                 subtitleFontSizeOption = subtitleFontSizeOption,
                 soundEffectMode = soundEffectMode,
                 onOpenSoundEffect = { viewModel.openSoundEffectSheet() },
-                onToggleLyricsMode = { viewModel.toggleLyricsMode() },
-
-                onCloseLyrics = { viewModel.setLyricsModeActive(false) },
-
 
                 onCycleFontSize = { viewModel.setSubtitleFontSizeOption(subtitleFontSizeOption.next()) },
 
@@ -702,13 +692,6 @@ fun DragonFlowScreen(
             )
 
         }
-
-
-        
-                .align(Alignment.TopCenter)
-
-        )
-
     }
 
     val showSoundEffectSheet by viewModel.showSoundEffectSheet.collectAsState()
@@ -879,15 +862,11 @@ private fun LandscapeTabletFlowContent(
 
     fontScale: Float = 1.0f,
 
-    songLyricState: com.dragon.fm.data.model.LiveSongLyricsState = com.dragon.fm.data.model.LiveSongLyricsState(),
-    isLyricsModeActive: Boolean = false,
     playerCoverStyle: PlayerCoverStyle = PlayerCoverStyle.VINYL,
     showChannelTags: Boolean = true,
     subtitleFontSizeOption: SubtitleFontSize = SubtitleFontSize.STANDARD,
     soundEffectMode: com.dragon.fm.player.SoundEffectMode = com.dragon.fm.player.SoundEffectMode.ORIGINAL,
     onOpenSoundEffect: () -> Unit = {},
-    onToggleLyricsMode: () -> Unit = {},
-    onCloseLyrics: () -> Unit = {},
 
 
     onCycleFontSize: () -> Unit = {},
@@ -1271,7 +1250,7 @@ private fun LandscapeTabletFlowContent(
                             coverDimension = coverDimension,
                             isPlaying = isPlaying,
                             stationAmbient = stationAmbient,
-                            onTap = { onToggleLyricsMode() },
+                            onTap = {},
                             onDoubleTap = {
                                 onToggleFavorite(currentStation)
                                 showHeartPop = true
@@ -1295,7 +1274,7 @@ private fun LandscapeTabletFlowContent(
                             coverDimension = coverDimension,
                             isPlaying = isPlaying,
                             stationAmbient = stationAmbient,
-                            onTap = { onToggleLyricsMode() },
+                            onTap = {},
                             onDoubleTap = {
                                 onToggleFavorite(currentStation)
                                 showHeartPop = true
@@ -1682,17 +1661,6 @@ private fun LandscapeTabletFlowContent(
                     }
                 }
 
-                if (songLyricState.song != null && !isLyricsModeActive) {
-                    Spacer(modifier = Modifier.height(if (isCompactLandscape) 3.dp else 6.dp))
-                    SingleLineLyricBar(
-                        songLyricState = songLyricState,
-                        onClick = onToggleLyricsMode,
-                        modifier = Modifier
-                            .fillMaxWidth(0.92f)
-                            .align(Alignment.CenterHorizontally)
-                    )
-                }
-
                 Spacer(modifier = Modifier.height(if (isCompactLandscape) 4.dp else 8.dp))
 
                 // Core Playback Controls (Previous, Large Play/Pause Ring, Next, Favorite)
@@ -1942,19 +1910,6 @@ private fun LandscapeTabletFlowContent(
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(if (isCompactLandscape) 5.dp else 8.dp)
             ) {
-                if (isLyricsModeActive) {
-                    LiveLyricsCard(
-                        songLyricState = songLyricState,
-                        fontSizeOption = subtitleFontSizeOption,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(DragonTheme.surface.copy(alpha = if (isDark) 0.55f else 0.75f))
-                            .border(0.5.dp, DragonTheme.glassBorder, RoundedCornerShape(18.dp)),
-                        onCloseLyrics = onCloseLyrics,
-                        onCycleFontSize = onCycleFontSize,
-                    )
-                } else {
                     // 1. Tool Capsule Bar (Horizontal Scrollable for Quick Operations)
                     LazyRow(
 
@@ -2490,7 +2445,6 @@ private fun LandscapeTabletFlowContent(
 
                     }
 
-                }
                 }
             }
         }
@@ -4540,5 +4494,4 @@ private fun PortraitFlowContent(
             )
         }
     }
-}
 }

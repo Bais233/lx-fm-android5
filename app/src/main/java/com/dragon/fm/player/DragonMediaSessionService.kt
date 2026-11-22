@@ -30,6 +30,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class DragonMediaSessionService : Service() {
+    override fun onBind(intent: Intent?): IBinder? = null
+
     private var notificationManager: NotificationManager? = null
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var playerStateCollectJob: Job? = null

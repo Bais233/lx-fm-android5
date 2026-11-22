@@ -17,8 +17,6 @@ import com.dragon.fm.data.model.PlaybackStatus
 import com.dragon.fm.data.model.PlayerState
 import com.dragon.fm.data.model.RadioStation
 import com.dragon.fm.data.model.StreamLine
-import com.dragon.fm.data.model.RecognizedSong
-import com.dragon.fm.data.model.LiveSongLyricsState
 import com.dragon.fm.player.DragonRadioPlayer
 import com.dragon.fm.player.RecordedFile
 import com.dragon.fm.player.RecorderManager
@@ -38,6 +36,7 @@ import com.dragon.fm.data.model.CustomScenarioMode
 import com.dragon.fm.data.model.AppBackupData
 import com.dragon.fm.data.model.BackupRestoreSummary
 import com.dragon.fm.data.model.DownloadState
+import com.dragon.fm.data.model.LiveSongLyricsState
 import com.dragon.fm.data.model.PlayerCoverStyle
 import com.dragon.fm.data.model.QuickActionButton
 import com.dragon.fm.data.model.SubtitleFontSize
@@ -61,6 +60,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _showSoundEffectSheet = MutableStateFlow(false)
     val showSoundEffectSheet: StateFlow<Boolean> = _showSoundEffectSheet.asStateFlow()
+
+    // 歌词链路已移除，保留只读关闭状态供旧界面安全引用
+    val isLyricsModeActive: StateFlow<Boolean> = MutableStateFlow(false).asStateFlow()
+    val songLyricState: StateFlow<LiveSongLyricsState> = MutableStateFlow(LiveSongLyricsState()).asStateFlow()
+    fun toggleLyricsMode() {}
+    fun setLyricsModeActive(active: Boolean) {}
 
     fun openSoundEffectSheet() { _showSoundEffectSheet.value = true }
     fun closeSoundEffectSheet() { _showSoundEffectSheet.value = false }
@@ -86,14 +91,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val localRecordingPositionMs: StateFlow<Long> = localRecordingPlayer.currentPositionMs
     val localRecordingDurationMs: StateFlow<Long> = localRecordingPlayer.durationMs
     val localRecordingSpeed: StateFlow<Float> = localRecordingPlayer.playbackSpeed
-    // Static song lyrics
-    private val _isLyricsModeActive = MutableStateFlow(false)
-    val isLyricsModeActive: StateFlow<Boolean> = _isLyricsModeActive.asStateFlow()
-
-    // Live Synchronized Song Lyrics
-    val songLyricManager = com.dragon.fm.player.LiveSongLyricManager(viewModelScope)
-    val songLyricState: StateFlow<LiveSongLyricsState> = songLyricManager.lyricsState
-
     // Navigation routing support
     private val _targetScreenRoute = MutableStateFlow<String?>(null)
     val targetScreenRoute: StateFlow<String?> = _targetScreenRoute.asStateFlow()
@@ -104,10 +101,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearTargetScreenRoute() {
         _targetScreenRoute.value = null
-    }
-
-    fun onStationChangedForSubtitle() {
-        songLyricManager.onStationChanged()
     }
 
     // 1. 播放页自定义设置 (封面样式、频道标签、律动频谱、功能按钮)
@@ -2165,7 +2158,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _currentIndex.value = index
             val station = list[index]
             val freshStation = DedicatedSourceManager.resolveFreshStation(station)
-            onStationChangedForSubtitle()
             val isFav = favoritesRepo.isFavorite(freshStation.id)
             val updated = favoritesRepo.applyCustomName(freshStation.copy(isFavorite = isFav))
             if (freshStation.playUrl != station.playUrl) {
@@ -2205,7 +2197,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _currentIndex.value = index
             val station = list[index]
             val freshStation = DedicatedSourceManager.resolveFreshStation(station)
-            onStationChangedForSubtitle()
             val isFav = favoritesRepo.isFavorite(freshStation.id)
             val updated = favoritesRepo.applyCustomName(freshStation.copy(isFavorite = isFav))
             if (freshStation.playUrl != station.playUrl) {
