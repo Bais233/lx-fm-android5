@@ -39,13 +39,13 @@ import com.dragon.fm.data.model.BackgroundPresets
 import com.dragon.fm.data.model.PlaybackStatus
 import com.dragon.fm.data.model.UpdateCheckResult
 import com.dragon.fm.ui.components.AppUpdateDialog
-import com.dragon.fm.ui.screens.CarModeDialog
 import com.dragon.fm.ui.screens.DragonFlowScreen
 import com.dragon.fm.ui.screens.LibraryScreen
 import com.dragon.fm.ui.screens.RadarExploreScreen
 import com.dragon.fm.ui.screens.SettingsScreen
 import com.dragon.fm.ui.screens.SleepModeOverlay
 import com.dragon.fm.ui.screens.StudioDrawerSheet
+import com.dragon.fm.ui.theme.AppearanceSchedule
 import com.dragon.fm.ui.theme.DragonFMTheme
 import com.dragon.fm.ui.theme.ThemePreset
 import com.dragon.fm.ui.viewmodel.MainViewModel
@@ -70,15 +70,34 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
+            val appearanceModeName by viewModel.appearanceMode.collectAsState()
+            val appearanceMode = try { AppearanceSchedule.Mode.valueOf(appearanceModeName) } catch (_: Exception) { AppearanceSchedule.Mode.SYSTEM }
+            val dayStartMinutes by viewModel.appearanceDayStart.collectAsState()
+            val nightStartMinutes by viewModel.appearanceNightStart.collectAsState()
+            val latitude by viewModel.appearanceLatitude.collectAsState()
+            val longitude by viewModel.appearanceLongitude.collectAsState()
+            var appearanceMinute by remember { mutableLongStateOf(System.currentTimeMillis()) }
+            if (appearanceMode == AppearanceSchedule.Mode.SCHEDULE || appearanceMode == AppearanceSchedule.Mode.SUNRISE_SUNSET) {
+                androidx.compose.runtime.LaunchedEffect(appearanceMode) {
+                    while (true) {
+                        appearanceMinute = System.currentTimeMillis()
+                        kotlinx.coroutines.delay(60_000L)
+                    }
+                }
+            }
             val currentTheme by viewModel.currentTheme.collectAsState()
             val isFollowSystemTheme by viewModel.isFollowSystemTheme.collectAsState()
             val selectedLightThemeId by viewModel.selectedLightThemeId.collectAsState()
             val selectedDarkThemeId by viewModel.selectedDarkThemeId.collectAsState()
             val isSystemDark = isSystemInDarkTheme()
 
-            val effectiveTheme = remember(currentTheme, isFollowSystemTheme, isSystemDark, selectedLightThemeId, selectedDarkThemeId) {
-                if (isFollowSystemTheme) {
-                    if (isSystemDark) {
+            val isScheduledDark = AppearanceSchedule.isDark(
+                appearanceMode, isSystemDark, currentTheme.isDark, appearanceMinute,
+                java.util.TimeZone.getDefault(), dayStartMinutes, nightStartMinutes, latitude, longitude
+            )
+            val effectiveTheme = remember(currentTheme, isFollowSystemTheme, isScheduledDark, selectedLightThemeId, selectedDarkThemeId) {
+                if (isFollowSystemTheme || appearanceMode == AppearanceSchedule.Mode.SCHEDULE || appearanceMode == AppearanceSchedule.Mode.SUNRISE_SUNSET) {
+                    if (isScheduledDark) {
                         ThemePreset.fromId(selectedDarkThemeId)
                     } else {
                         ThemePreset.fromId(selectedLightThemeId)
@@ -90,18 +109,30 @@ class MainActivity : ComponentActivity() {
 
             val appBackground by viewModel.appBackground.collectAsState()
             val fontScale by viewModel.fontScale.collectAsState()
+            val interfaceScale by viewModel.interfaceScale.collectAsState()
+            val customPrimaryColor by viewModel.customPrimaryColor.collectAsState()
+            val customFontName by viewModel.customFontName.collectAsState()
             val currentDensity = androidx.compose.ui.platform.LocalDensity.current
-            val customDensity = remember(currentDensity, fontScale) {
+            val customDensity = remember(currentDensity, fontScale, interfaceScale) {
                 androidx.compose.ui.unit.Density(
-                    density = currentDensity.density,
+                    density = currentDensity.density * interfaceScale,
                     fontScale = currentDensity.fontScale * fontScale
                 )
+            }
+            val customFontFamily = remember(customFontName) {
+                viewModel.getCustomFontFile()?.let { file ->
+                    try { androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(file)) } catch (_: Exception) { null }
+                }
             }
 
             androidx.compose.runtime.CompositionLocalProvider(
                 androidx.compose.ui.platform.LocalDensity provides customDensity
             ) {
-                DragonFMTheme(preset = effectiveTheme) {
+                DragonFMTheme(
+                    preset = effectiveTheme,
+                    customPrimaryColor = customPrimaryColor?.let { Color(it) },
+                    customFontFamily = customFontFamily
+                ) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         // Background Layer: Default Solid, Selected Fluid Preset, or User Album Wallpaper
                         when (appBackground.type) {
@@ -191,7 +222,6 @@ fun DragonAppContent(viewModel: MainViewModel) {
 
     var currentScreen by remember { mutableStateOf(ScreenRoute.FLOW) }
     var showStudioSheet by remember { mutableStateOf(false) }
-    var showCarMode by remember { mutableStateOf(false) }
 
     val targetRoute by viewModel.targetScreenRoute.collectAsState()
     androidx.compose.runtime.LaunchedEffect(targetRoute) {
@@ -233,9 +263,6 @@ fun DragonAppContent(viewModel: MainViewModel) {
         when {
             isSleepModeActive -> {
                 viewModel.toggleSleepMode()
-            }
-            showCarMode -> {
-                showCarMode = false
             }
             showStudioSheet -> {
                 showStudioSheet = false
@@ -292,7 +319,6 @@ fun DragonAppContent(viewModel: MainViewModel) {
                         onOpenRadar = { currentScreen = ScreenRoute.RADAR },
                         onOpenLibrary = { currentScreen = ScreenRoute.LIBRARY },
                         onOpenStudio = { showStudioSheet = true },
-                        onOpenCarMode = { showCarMode = true },
                         onToggleSleepMode = { viewModel.toggleSleepMode() },
                         onOpenTag = { tagQuery ->
                             viewModel.openTagExplore(tagQuery)
@@ -335,7 +361,6 @@ fun DragonAppContent(viewModel: MainViewModel) {
                 scenarioOrder = scenarioOrder,
                 favoriteCount = favorites.size,
                 currentTheme = currentTheme,
-                fontScale = fontScale,
                 onDismiss = {
                     showStudioSheet = false
                 },
@@ -372,28 +397,6 @@ fun DragonAppContent(viewModel: MainViewModel) {
                 },
                 onToggleRecording = { viewModel.toggleRecording() },
                 onSetSleepTimer = { mins -> viewModel.setSleepTimer(mins) }
-            )
-        }
-
-        // Car HUD Mode Dialog
-        if (showCarMode) {
-            val quickStations = if (favorites.isNotEmpty()) favorites else playlist
-            val isCurrentFav = favorites.any { it.id == playerState.currentStation?.id }
-            CarModeDialog(
-                playerState = playerState,
-                fontScale = fontScale,
-                quickStations = quickStations,
-                isFavorite = isCurrentFav,
-                onToggleFavorite = {
-                    playerState.currentStation?.let { viewModel.toggleFavorite(it) }
-                },
-                onSelectStation = { station ->
-                    viewModel.playStation(station)
-                },
-                onPrevious = { viewModel.previousStation() },
-                onTogglePlayPause = { viewModel.togglePlayPause() },
-                onNext = { viewModel.nextStation() },
-                onDismiss = { showCarMode = false }
             )
         }
 
