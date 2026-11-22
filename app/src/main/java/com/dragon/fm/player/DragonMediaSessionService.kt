@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -13,11 +14,6 @@ import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
-import androidx.media3.common.ForwardingPlayer
-import androidx.media3.common.Player
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.session.MediaSession
-import androidx.media3.session.MediaSessionService
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
@@ -29,13 +25,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-@UnstableApi
-class DragonMediaSessionService : MediaSessionService() {
-
-    private var mediaSession: MediaSession? = null
+class DragonMediaSessionService : Service() {
     private var notificationManager: NotificationManager? = null
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var playerStateCollectJob: Job? = null
@@ -59,85 +53,10 @@ class DragonMediaSessionService : MediaSessionService() {
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel()
 
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
         val app = applicationContext as? DragonFmApp
         val radioPlayer = app?.radioPlayer
-        val player = radioPlayer?.exoPlayer
 
-        if (player != null) {
-            val forwardingPlayer = object : ForwardingPlayer(player) {
-                override fun isCommandAvailable(command: Int): Boolean {
-                    return when (command) {
-                        Player.COMMAND_SEEK_TO_NEXT,
-                        Player.COMMAND_SEEK_TO_PREVIOUS,
-                        Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM,
-                        Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
-                        Player.COMMAND_PLAY_PAUSE,
-                        Player.COMMAND_STOP -> true
-                        else -> super.isCommandAvailable(command)
-                    }
-                }
-
-                override fun getAvailableCommands(): Player.Commands {
-                    return super.getAvailableCommands().buildUpon()
-                        .add(Player.COMMAND_SEEK_TO_NEXT)
-                        .add(Player.COMMAND_SEEK_TO_PREVIOUS)
-                        .add(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
-                        .add(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
-                        .add(Player.COMMAND_PLAY_PAUSE)
-                        .add(Player.COMMAND_STOP)
-                        .build()
-                }
-
-                override fun play() {
-                    Log.i(TAG, "[Command] play triggered from MediaSession")
-                    radioPlayer.play()
-                }
-
-                override fun pause() {
-                    Log.i(TAG, "[Command] pause triggered from MediaSession")
-                    radioPlayer.pause()
-                }
-
-                override fun stop() {
-                    Log.i(TAG, "[Command] stop triggered from MediaSession")
-                    stopPlaybackAndService(this@DragonMediaSessionService)
-                }
-
-                override fun seekToNext() {
-                    Log.i(TAG, "[Command] seekToNext triggered from MediaSession")
-                    onSkipNextListener?.invoke()
-                }
-
-                override fun seekToNextMediaItem() {
-                    Log.i(TAG, "[Command] seekToNextMediaItem triggered from MediaSession")
-                    onSkipNextListener?.invoke()
-                }
-
-                override fun seekToPrevious() {
-                    Log.i(TAG, "[Command] seekToPrevious triggered from MediaSession")
-                    onSkipPreviousListener?.invoke()
-                }
-
-                override fun seekToPreviousMediaItem() {
-                    Log.i(TAG, "[Command] seekToPreviousMediaItem triggered from MediaSession")
-                    onSkipPreviousListener?.invoke()
-                }
-            }
-
-            mediaSession = MediaSession.Builder(this, forwardingPlayer)
-                .setSessionActivity(pendingIntent)
-                .build()
-
+        if (radioPlayer != null) {
             // Directly observe radioPlayer's state flow for millisecond-precision synchronization
             playerStateCollectJob?.cancel()
             playerStateCollectJob = serviceScope.launch(Dispatchers.Main) {
@@ -312,7 +231,6 @@ class DragonMediaSessionService : MediaSessionService() {
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "关闭", stopIntent)
             .setStyle(
                 MediaStyle()
-                    .setMediaSession(mediaSession?.sessionCompatToken)
                     .setShowActionsInCompactView(0, 1, 2)
             )
 
@@ -349,10 +267,6 @@ class DragonMediaSessionService : MediaSessionService() {
         }
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
-        return mediaSession
-    }
-
     override fun onTaskRemoved(rootIntent: Intent?) {
         val app = applicationContext as? DragonFmApp
         val status = app?.radioPlayer?.playerState?.value?.status
@@ -368,10 +282,7 @@ class DragonMediaSessionService : MediaSessionService() {
         playerStateCollectJob = null
         notificationManager?.cancel(NOTIFICATION_ID)
         instance = null
-        mediaSession?.run {
-            release()
-            mediaSession = null
-        }
+        serviceScope.cancel()
         super.onDestroy()
     }
 

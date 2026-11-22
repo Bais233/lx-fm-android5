@@ -10,7 +10,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 internal object GitHubReleaseParser {
     private val json = Json { ignoreUnknownKeys = true }
-    private val versionCodePattern = Regex("(?m)^[ \t]*versionCode[ \t]*:[ \t]*(\d+)[ \t]*\r?$")
+    private val versionCodePattern = Regex("(?m)^[ \t]*versionCode[ \t]*:[ \t]*([0-9]+)[ \t]*\r?$")
 
     fun parse(body: String): AppUpdateInfo {
         val release = json.parseToJsonElement(body).jsonObject

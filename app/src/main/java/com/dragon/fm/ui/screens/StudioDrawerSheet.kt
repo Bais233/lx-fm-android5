@@ -828,7 +828,7 @@ fun StudioDrawerSheet(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                items(ThemePreset.entries) { preset ->
+                items(ThemePreset.presets) { preset ->
                     val isSelected = preset == currentTheme
                     Surface(
                         shape = RoundedCornerShape(14.dp),

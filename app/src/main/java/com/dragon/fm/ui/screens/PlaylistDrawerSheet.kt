@@ -398,7 +398,6 @@ fun PlaylistDrawerSheet(
         }
     }
 }
-}
 
 /**
  * Individual Station Row supporting drag reordering, editing and instant channel playback

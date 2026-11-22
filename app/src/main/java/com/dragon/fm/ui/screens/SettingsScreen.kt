@@ -67,6 +67,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
@@ -1413,14 +1414,20 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SettingsSectionHeader(title: String) {
-    Text(
-        text = title,
-        color = DragonTheme.textSecondary,
-        fontSize = 12.5.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.3.sp
-    )
+private fun SettingsSectionHeader(title: String, icon: ImageVector? = null) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (icon != null) {
+            Icon(icon, contentDescription = null, tint = DragonTheme.primary, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+        }
+        Text(
+            text = title,
+            color = DragonTheme.textSecondary,
+            fontSize = 12.5.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.3.sp
+        )
+    }
 }
 
 @Composable
