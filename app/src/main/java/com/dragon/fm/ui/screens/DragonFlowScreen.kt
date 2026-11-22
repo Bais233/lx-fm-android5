@@ -4385,6 +4385,7 @@ private fun PortraitFlowContent(
 
             }
         }
+        } // end if (!isLyricsModeActive) top nav
 
 
         // Double-tap heart pop up overlay
