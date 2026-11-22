@@ -2,6 +2,9 @@ package com.dragon.fm.ui.viewmodel
 
 import android.app.Application
 import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dragon.fm.DragonFmApp
@@ -360,6 +363,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setEnableUpdateReminder(enable: Boolean) {
         _enableUpdateReminder.value = enable
         prefs.edit().putBoolean("pref_enable_update_reminder", enable).apply()
+    }
+
+    // 调试模式（隐藏开发者选项，默认关闭）：开启后输出详细日志并展示开发者面板
+    private val _debugModeEnabled = MutableStateFlow(prefs.getBoolean("pref_debug_mode", false))
+    val debugModeEnabled: StateFlow<Boolean> = _debugModeEnabled.asStateFlow()
+
+    fun setDebugModeEnabled(enable: Boolean) {
+        _debugModeEnabled.value = enable
+        prefs.edit().putBoolean("pref_debug_mode", enable).apply()
     }
 
     // Music recognition dialog visibility
@@ -973,6 +985,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         // Prewarm high-speed explore cache and instant stations on startup
         prewarmExploreCache()
+    }
+
+    var debugVersionTapCount by mutableStateOf(0)
+        private set
+
+    /** 连续点击版本行 5 次进入开发者模式（一次性解锁） */
+    fun onVersionRowTapped() {
+        if (_debugModeEnabled.value) return
+        debugVersionTapCount += 1
+        if (debugVersionTapCount >= 5) {
+            debugVersionTapCount = 0
+            setDebugModeEnabled(true)
+        }
     }
 
     val currentVersionName: String get() = updateManager.getCurrentVersionName()
