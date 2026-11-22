@@ -87,8 +87,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
-import com.dragon.fm.player.AsrModelState
-import com.dragon.fm.ui.components.AsrModelDownloadDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -146,9 +144,38 @@ fun SettingsScreen(
     val historyStations by viewModel.historyStations.collectAsState()
     val currentTheme by viewModel.currentTheme.collectAsState()
     val isFollowSystemTheme by viewModel.isFollowSystemTheme.collectAsState()
+    val selectedLightThemeId by viewModel.selectedLightThemeId.collectAsState()
+    val selectedDarkThemeId by viewModel.selectedDarkThemeId.collectAsState()
+    val displayedThemeId = if (appearanceMode == "MANUAL") currentTheme.id else if (DragonTheme.isDark) selectedDarkThemeId else selectedLightThemeId
     val appBackground by viewModel.appBackground.collectAsState()
     val isAutoPlayOnLaunch by viewModel.isAutoPlayOnLaunch.collectAsState()
     val fontScale by viewModel.fontScale.collectAsState()
+    val appearanceMode by viewModel.appearanceMode.collectAsState()
+    val appearanceDay by viewModel.appearanceDayStart.collectAsState()
+    val appearanceNight by viewModel.appearanceNightStart.collectAsState()
+    val appearanceLatitude by viewModel.appearanceLatitude.collectAsState()
+    val appearanceLongitude by viewModel.appearanceLongitude.collectAsState()
+    var appearanceDayText by remember { mutableStateOf("") }
+    var appearanceNightText by remember { mutableStateOf("") }
+    var appearanceLatitudeText by remember { mutableStateOf("") }
+    var appearanceLongitudeText by remember { mutableStateOf("") }
+    LaunchedEffect(appearanceDay, appearanceNight) {
+        appearanceDayText = formatAppearanceTime(appearanceDay)
+        appearanceNightText = formatAppearanceTime(appearanceNight)
+    }
+    LaunchedEffect(appearanceLatitude, appearanceLongitude) {
+        appearanceLatitudeText = appearanceLatitude.toString()
+        appearanceLongitudeText = appearanceLongitude.toString()
+    }
+    val interfaceScale by viewModel.interfaceScale.collectAsState()
+    val customPrimaryColor by viewModel.customPrimaryColor.collectAsState()
+    val customFontName by viewModel.customFontName.collectAsState()
+    val fontPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            val error = viewModel.importCustomFont(uri)
+            Toast.makeText(context, error ?: "字体已应用", Toast.LENGTH_LONG).show()
+        }
+    }
     val streamSourceMode by viewModel.streamSourceMode.collectAsState()
 
     val wallpaperPickerLauncher = rememberLauncherForActivityResult(
@@ -166,7 +193,6 @@ fun SettingsScreen(
     val quickActionButtons by viewModel.quickActionButtons.collectAsState()
     val swipeRightAction by viewModel.swipeRightAction.collectAsState()
     val swipeLeftAction by viewModel.swipeLeftAction.collectAsState()
-    val showLiveSubtitles by viewModel.showLiveSubtitles.collectAsState()
     val subtitleFontSizeOption by viewModel.subtitleFontSizeOption.collectAsState()
     val enableUpdateReminder by viewModel.enableUpdateReminder.collectAsState()
 
@@ -182,10 +208,6 @@ fun SettingsScreen(
     var showAddCustomDialog by remember { mutableStateOf(false) }
     var showClearHistoryConfirm by remember { mutableStateOf(false) }
     var showQuitConfirm by remember { mutableStateOf(false) }
-    var showClearAsrModelConfirm by remember { mutableStateOf(false) }
-    val asrModelState by viewModel.asrModelState.collectAsState()
-    val currentAsrModelType by viewModel.currentAsrModelType.collectAsState()
-    val showAsrDownloadDialog by viewModel.showAsrDownloadDialog.collectAsState()
 
     val updateCheckResult by viewModel.updateCheckResult.collectAsState()
     val debugModeEnabled by viewModel.debugModeEnabled.collectAsState()
@@ -219,12 +241,12 @@ fun SettingsScreen(
         }
     }
 
-    val openGiteeRepo = {
+    val openGitHubRepo = {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://gitee.com/app-finder/LX-FM"))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Bais233/lx-fm-android5"))
             context.startActivity(intent)
         } catch (_: Exception) {
-            Toast.makeText(context, "请在浏览器访问: https://gitee.com/app-finder/LX-FM", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "请在浏览器访问: https://github.com/Bais233/lx-fm-android5", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -400,14 +422,6 @@ fun SettingsScreen(
                         subtitle = "拔出耳机或断开车载蓝牙时静默暂停，避免公共场合声音外放",
                         statusText = "已开启"
                     )
-
-                    HorizontalDivider(color = DragonTheme.glassBorder, thickness = 0.5.dp)
-
-                    SettingsInfoRow(
-                        title = "车载 MediaSession 控制",
-                        subtitle = "全面集成 Android 原生媒体中心，支持方向盘按键与锁屏切台",
-                        statusText = "已就绪"
-                    )
                 }
             }
 
@@ -439,38 +453,48 @@ fun SettingsScreen(
                 SettingsSectionHeader(title = "界面与个性化", icon = Icons.Default.Tune)
                 Spacer(modifier = Modifier.height(8.dp))
                 SettingsCard {
-                    // 1. Follow System Dark/Light Theme Switch
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { viewModel.setFollowSystemTheme(!isFollowSystemTheme) }
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "跟随系统深浅外观",
-                                color = DragonTheme.textPrimary,
-                                fontSize = 14.5.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = if (isFollowSystemTheme) "已开启：随系统浅色/深色模式自动无缝切换" else "已关闭：固定使用所选主题风格",
-                                color = DragonTheme.textSecondary,
-                                fontSize = 12.sp
-                            )
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text("外观切换", color = DragonTheme.textPrimary, fontSize = 14.5.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        val modes = listOf("SYSTEM" to "跟随系统", "MANUAL" to "固定主题", "SCHEDULE" to "定时切换", "SUNRISE_SUNSET" to "日出日落")
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            modes.forEach { (mode, label) ->
+                                Surface(
+                                    onClick = { viewModel.setAppearanceMode(mode) },
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = if (appearanceMode == mode) DragonTheme.primary.copy(alpha = 0.18f) else DragonTheme.glassSurface,
+                                    border = BorderStroke(1.dp, if (appearanceMode == mode) DragonTheme.primary else DragonTheme.glassBorder)
+                                ) { Text(label, color = if (appearanceMode == mode) DragonTheme.primary else DragonTheme.textPrimary, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) }
+                            }
                         }
-                        Switch(
-                            checked = isFollowSystemTheme,
-                            onCheckedChange = { viewModel.setFollowSystemTheme(it) },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = DragonTheme.primary,
-                                checkedTrackColor = DragonTheme.primary.copy(alpha = 0.35f),
-                                uncheckedThumbColor = DragonTheme.textSecondary,
-                                uncheckedTrackColor = DragonTheme.glassSurface
-                            )
-                        )
+                        if (appearanceMode == "SCHEDULE") {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("日间开始 / 夜间开始（24 小时制，支持跨午夜）", color = DragonTheme.textSecondary, fontSize = 12.sp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(value = appearanceDayText, onValueChange = { appearanceDayText = it }, label = { Text("日间，如 07:00") }, singleLine = true, modifier = Modifier.weight(1f))
+                                OutlinedTextField(value = appearanceNightText, onValueChange = { appearanceNightText = it }, label = { Text("夜间，如 19:00") }, singleLine = true, modifier = Modifier.weight(1f))
+                            }
+                            TextButton(onClick = {
+                                val day = parseAppearanceTime(appearanceDayText)
+                                val night = parseAppearanceTime(appearanceNightText)
+                                if (day == null || night == null) Toast.makeText(context, "请输入有效时间，例如 07:00", Toast.LENGTH_SHORT).show()
+                                else { viewModel.setAppearanceSchedule(day, night); Toast.makeText(context, "切换时间已保存", Toast.LENGTH_SHORT).show() }
+                            }) { Text("保存切换时间") }
+                        }
+                        if (appearanceMode == "SUNRISE_SUNSET") {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("手动填写经纬度，离线估算日出日落；不获取位置、不联网。", color = DragonTheme.textSecondary, fontSize = 12.sp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(value = appearanceLatitudeText, onValueChange = { appearanceLatitudeText = it }, label = { Text("纬度，如 31.23") }, singleLine = true, modifier = Modifier.weight(1f))
+                                OutlinedTextField(value = appearanceLongitudeText, onValueChange = { appearanceLongitudeText = it }, label = { Text("经度，如 121.47") }, singleLine = true, modifier = Modifier.weight(1f))
+                            }
+                            TextButton(onClick = {
+                                val lat = appearanceLatitudeText.toDoubleOrNull()
+                                val lon = appearanceLongitudeText.toDoubleOrNull()
+                                if (lat == null || lon == null || lat !in -90.0..90.0 || lon !in -180.0..180.0) Toast.makeText(context, "纬度范围 -90 至 90，经度范围 -180 至 180", Toast.LENGTH_SHORT).show()
+                                else { viewModel.setAppearanceLocation(lat, lon); Toast.makeText(context, "位置已保存，仅用于日出日落", Toast.LENGTH_SHORT).show() }
+                            }) { Text("保存位置") }
+                        }
                     }
 
                     HorizontalDivider(color = DragonTheme.glassBorder, thickness = 0.5.dp)
@@ -505,7 +529,7 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             for (theme in ThemePreset.lightPresets) {
-                                val isSelected = theme.id == currentTheme.id
+                                val isSelected = theme.id == displayedThemeId
                                 Surface(
                                     shape = RoundedCornerShape(10.dp),
                                     color = if (isSelected) DragonTheme.primary.copy(alpha = 0.15f) else DragonTheme.glassSurface,
@@ -573,7 +597,7 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             for (theme in ThemePreset.darkPresets) {
-                                val isSelected = theme.id == currentTheme.id
+                                val isSelected = theme.id == displayedThemeId
                                 Surface(
                                     shape = RoundedCornerShape(10.dp),
                                     color = if (isSelected) DragonTheme.primary.copy(alpha = 0.15f) else DragonTheme.glassSurface,
@@ -610,6 +634,43 @@ fun SettingsScreen(
                     }
 
                     HorizontalDivider(color = DragonTheme.glassBorder, thickness = 0.5.dp)
+
+
+                    HorizontalDivider(color = DragonTheme.glassBorder, thickness = 0.5.dp)
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text("自选强调色", color = DragonTheme.textPrimary, fontSize = 14.5.sp, fontWeight = FontWeight.Bold)
+                        Text("改变按钮、选中状态与播放强调色；保留主题背景。", color = DragonTheme.textSecondary, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(10.dp))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(0xFF0284C7, 0xFF059669, 0xFFD97706, 0xFFE11D48, 0xFF8B5CF6, 0xFF0891B2, 0xFF4F46E5, 0xFF78716C).forEach { color ->
+                                Surface(onClick = { viewModel.setCustomPrimaryColor(color) }, modifier = Modifier.size(30.dp), shape = CircleShape, color = Color(color), border = BorderStroke(if (customPrimaryColor == color) 3.dp else 1.dp, if (customPrimaryColor == color) DragonTheme.textPrimary else DragonTheme.glassBorder)) {}
+                            }
+                            TextButton(onClick = { viewModel.setCustomPrimaryColor(null) }) { Text("恢复主题色") }
+                        }
+                    }
+                    HorizontalDivider(color = DragonTheme.glassBorder, thickness = 0.5.dp)
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text("界面大小", color = DragonTheme.textPrimary, fontSize = 14.5.sp, fontWeight = FontWeight.Bold)
+                        Text("当前 " + (interfaceScale * 100).toInt() + "%，调整布局尺寸；字号可独立设置。", color = DragonTheme.textSecondary, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("紧凑" to 0.85f, "标准" to 1f, "舒适" to 1.10f, "较大" to 1.20f).forEach { (label, scale) ->
+                                Surface(onClick = { viewModel.setInterfaceScale(scale) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(10.dp), color = if (interfaceScale == scale) DragonTheme.primary.copy(alpha = 0.18f) else DragonTheme.glassSurface) {
+                                    Text(label, fontSize = 12.sp, color = if (interfaceScale == scale) DragonTheme.primary else DragonTheme.textPrimary, modifier = Modifier.padding(vertical = 9.dp, horizontal = 8.dp))
+                                }
+                            }
+                        }
+                    }
+                    HorizontalDivider(color = DragonTheme.glassBorder, thickness = 0.5.dp)
+                    SettingsActionRow(
+                        title = "自定义字体",
+                        subtitle = customFontName ?: "选择 TTF / OTF 字体；保存在应用内部，无需存储权限",
+                        actionLabel = if (customFontName == null) "选择字体" else "更换字体",
+                        onClick = { fontPickerLauncher.launch(arrayOf("font/ttf", "font/otf", "application/x-font-ttf", "application/x-font-otf", "application/octet-stream")) }
+                    )
+                    if (customFontName != null) {
+                        TextButton(onClick = { viewModel.clearCustomFont() }, modifier = Modifier.padding(horizontal = 10.dp)) { Text("恢复系统字体") }
+                    }
 
                     // 4. Background & Custom Wallpaper Settings
                     Column(modifier = Modifier.padding(14.dp)) {
@@ -998,21 +1059,12 @@ fun SettingsScreen(
 
             // Section: Live Subtitles & Lyrics
             item {
-                SettingsSectionHeader(title = "实时字幕与歌词", icon = Icons.Default.Subtitles)
+                SettingsSectionHeader(title = "歌词", icon = Icons.Default.Subtitles)
                 Spacer(modifier = Modifier.height(8.dp))
                 SettingsCard {
-                    SettingsSwitchRow(
-                        title = "在播放页展示实时字幕与状态标识",
-                        subtitle = "开启后在封面下方展示实时单行字幕条与状态胶囊；关闭后彻底隐藏",
-                        checked = showLiveSubtitles,
-                        onCheckedChange = { viewModel.setShowLiveSubtitles(it) }
-                    )
-
-                    HorizontalDivider(color = DragonTheme.glassBorder, thickness = 0.5.dp)
-
                     SettingsActionRow(
-                        title = "歌词与字幕字体大小",
-                        subtitle = "当前字号: ${subtitleFontSizeOption.title} · 适配深浅色与车载模式",
+                        title = "歌词字体大小",
+                        subtitle = "当前字号: ${subtitleFontSizeOption.title} · 适配深浅色模式",
                         actionLabel = "调整",
                         onClick = { showSubtitleFontSizeDialog = true }
                     )
@@ -1037,88 +1089,6 @@ fun SettingsScreen(
 
                     HorizontalDivider(color = DragonTheme.glassBorder, thickness = 0.5.dp)
 
-                    // 离线语音模型管理项（按需下载与清除）
-                    when (val asr = asrModelState) {
-                        is AsrModelState.Ready -> {
-                            val sizeMb = String.format("%.1f MB", asr.totalSizeBytes / (1024f * 1024f))
-                            SettingsActionRow(
-                                title = "实时字幕离线语音模型",
-                                subtitle = "已就绪 · ${asr.modelType.title} (占用 $sizeMb) · 端侧离线高速转写",
-                                actionLabel = "切换/管理",
-                                        onClick = { viewModel.openAsrDownloadDialog() }
-                            )
-                            HorizontalDivider(color = DragonTheme.glassBorder, thickness = 0.5.dp)
-                            SettingsActionRow(
-                                title = "清除离线语音模型与核心引擎",
-                                subtitle = "一键删除端侧模型及推理组件，彻底释放所有占用空间",
-                                actionLabel = "一键清除",
-                                actionColor = LiveRed,
-                                onClick = { showClearAsrModelConfirm = true }
-                            )
-                        }
-                        is AsrModelState.Downloading -> {
-                            val percent = (asr.progress * 100).toInt()
-                            val downloadedMb = String.format("%.1f MB", asr.downloadedBytes / (1024f * 1024f))
-                            val totalMb = String.format("%.1f MB", asr.totalBytes / (1024f * 1024f))
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = "下载中: ${asr.modelType.title} ($percent%)",
-                                            color = DragonTheme.textPrimary,
-                                            fontSize = 14.5.sp,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = "$downloadedMb / $totalMb · ${asr.currentFileName}",
-                                            color = DragonCyan,
-                                            fontSize = 11.5.sp
-                                        )
-                                    }
-                                    TextButton(onClick = { viewModel.cancelDownloadAsrModel() }) {
-                                        Text("取消", color = LiveRed, fontSize = 13.sp)
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                LinearProgressIndicator(
-                                    progress = { asr.progress },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(6.dp)
-                                        .clip(RoundedCornerShape(3.dp)),
-                                    color = DragonCyan,
-                                    trackColor = DragonCyan.copy(alpha = 0.2f)
-                                )
-                            }
-                        }
-                        is AsrModelState.Error -> {
-                            SettingsActionRow(
-                                title = "实时字幕离线语音模型",
-                                subtitle = "下载失败: ${asr.message}",
-                                actionLabel = "重试下载",
-                                        onClick = { viewModel.openAsrDownloadDialog() }
-                            )
-                        }
-                        is AsrModelState.NotDownloaded -> {
-                            SettingsActionRow(
-                                title = "实时字幕离线语音模型",
-                                subtitle = "未下载 · 支持精简中文(29MB)与中英双语(73MB)两种离线模型",
-                                actionLabel = "下载模型",
-                                        onClick = { viewModel.openAsrDownloadDialog() }
-                            )
-                        }
-                    }
-
-                    HorizontalDivider(color = DragonTheme.glassBorder, thickness = 0.5.dp)
 
                     SettingsActionRow(
                         title = "收听历史足迹",
@@ -1166,7 +1136,7 @@ fun SettingsScreen(
                 SettingsCard {
                     SettingsActionRow(
                         title = "检查新版本",
-                        subtitle = "当前版本: v${viewModel.currentVersionName} (Build ${viewModel.currentVersionCode}) · 自动同步 Gitee 发行版",
+                        subtitle = "当前版本: v${viewModel.currentVersionName} (Build ${viewModel.currentVersionCode}) · 自动同步 GitHub Releases",
                         actionLabel = if (updateCheckResult is UpdateCheckResult.Checking) "检查中..." else "检查更新",
                         actionColor = DragonTheme.primary,
                         onClick = {
@@ -1183,10 +1153,10 @@ fun SettingsScreen(
                     )
                     HorizontalDivider(color = DragonTheme.glassBorder, thickness = 0.5.dp)
                     SettingsActionRow(
-                        title = "Gitee 开源项目",
-                        subtitle = "https://gitee.com/app-finder/LX-FM",
+                        title = "GitHub 开源项目",
+                        subtitle = "https://github.com/Bais233/lx-fm-android5",
                         actionLabel = "访问",
-                        onClick = openGiteeRepo
+                        onClick = openGitHubRepo
                     )
                 }
                 Spacer(modifier = Modifier.height(18.dp))
@@ -1353,7 +1323,7 @@ fun SettingsScreen(
             currentOption = subtitleFontSizeOption,
             onSelect = { option ->
                 viewModel.setSubtitleFontSizeOption(option)
-                Toast.makeText(context, "已应用字幕字号：${option.title}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "已应用歌词字号：${option.title}", Toast.LENGTH_SHORT).show()
             },
             onDismiss = { showSubtitleFontSizeDialog = false }
         )
@@ -1489,54 +1459,7 @@ fun SettingsScreen(
         )
     }
 
-    // Quit Application Dialog
-    if (showQuitConfirm) {
-        AlertDialog(
-            onDismissRequest = { showQuitConfirm = false },
-            containerColor = DragonTheme.surface,
-            title = { Text("退出 LX FM", color = DragonTheme.textPrimary, fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    text = "确定要停止电台播放并完全退出应用程序吗？",
-                    color = DragonTheme.textSecondary,
-                    fontSize = 13.5.sp
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showQuitConfirm = false
-                        viewModel.quitApplication(context as? Activity)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = LiveRed)
-                ) {
-                    Text("退出应用", color = Color.White)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showQuitConfirm = false }) {
-                    Text("取消", color = DragonTheme.textSecondary)
-                }
-            }
-        )
-    }
-}
 
-// -------------------------------------------------------------------------------------------------
-// Sub-components: Cards, Dialogs & Rows
-// -------------------------------------------------------------------------------------------------
-
-@Composable
-private fun SettingsSectionHeader(title: String, icon: ImageVector) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = DragonTheme.textSecondary,
-            modifier = Modifier.size(15.dp)
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
             text = title,
             color = DragonTheme.textSecondary,
             fontSize = 12.5.sp,
@@ -2369,7 +2292,7 @@ private fun SubtitleFontSizeDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("歌词与字幕字号调节", color = DragonTheme.textPrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            Text("歌词字号调节", color = DragonTheme.textPrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp)
         },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
