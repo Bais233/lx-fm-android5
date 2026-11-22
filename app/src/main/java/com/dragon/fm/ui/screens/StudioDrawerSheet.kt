@@ -957,7 +957,6 @@ fun StudioDrawerSheet(
                 }
             }
         }
-        }
     }
 
     // --- DIALOGS & SUB-PANELS ---
