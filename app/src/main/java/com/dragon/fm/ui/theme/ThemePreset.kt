@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-enum class ThemePreset(
+class ThemePreset(
     val id: String,
     val title: String,
     val subtitle: String,
@@ -21,7 +21,7 @@ enum class ThemePreset(
     val isDark: Boolean = true,
     val indicatorColor: Color = primary
 ) {
-    LUNAR_LIGHT(
+    val LUNAR_LIGHT = ThemePreset(
         id = "lunar_light",
         title = "钛空雅素",
         subtitle = "清透典雅素白瓷与晨光深空天青，清爽通透的现代极简风",
@@ -37,8 +37,8 @@ enum class ThemePreset(
         glassBorder = Color(0xFFE2E8F0),
         isDark = false,
         indicatorColor = Color(0xFF7DD3FC)
-    ),
-    PORCELAIN_JADE(
+    )
+    val PORCELAIN_JADE = ThemePreset(
         id = "porcelain_jade",
         title = "温润白玉",
         subtitle = "温润白瓷与澄澈青玉，典雅宁静的高级古典东方声学美学",
@@ -54,8 +54,8 @@ enum class ThemePreset(
         glassBorder = Color(0xFFDCE7DF),
         isDark = false,
         indicatorColor = Color(0xFF6EE7B7)
-    ),
-    SUNLIT_AMBER(
+    )
+    val SUNLIT_AMBER = ThemePreset(
         id = "sunlit_amber",
         title = "晨曦暖杏",
         subtitle = "晨光暖金与柔润杏色，如同老式木质收音机的早晨微光",
@@ -71,8 +71,8 @@ enum class ThemePreset(
         glassBorder = Color(0xFFEDE0D1),
         isDark = false,
         indicatorColor = Color(0xFFFBBF24)
-    ),
-    CHERRY_BLOSSOM(
+    )
+    val CHERRY_BLOSSOM = ThemePreset(
         id = "cherry_blossom",
         title = "春樱落粉",
         subtitle = "落樱花瓣与柔雾淡粉，温婉明净的现代浪漫微风色调",
@@ -88,8 +88,8 @@ enum class ThemePreset(
         glassBorder = Color(0xFFF4D4DC),
         isDark = false,
         indicatorColor = Color(0xFFFDA4AF)
-    ),
-    FROSTED_SILVER(
+    )
+    val FROSTED_SILVER = ThemePreset(
         id = "frosted_silver",
         title = "霜银极简",
         subtitle = "冷调金属铝银与深空岩灰，德国博朗 Braun 与 Studio Hi-Fi 极简工艺",
@@ -105,8 +105,8 @@ enum class ThemePreset(
         glassBorder = Color(0xFFCBD5E1),
         isDark = false,
         indicatorColor = Color(0xFF93C5FD)
-    ),
-    MATCHA_MIST(
+    )
+    val MATCHA_MIST = ThemePreset(
         id = "matcha_mist",
         title = "薄雾青茶",
         subtitle = "清晨山岚与冷泡初茶，心旷神怡的治愈系自然雅韵",
@@ -122,8 +122,8 @@ enum class ThemePreset(
         glassBorder = Color(0xFFD4E6D7),
         isDark = false,
         indicatorColor = Color(0xFF86EFAC)
-    ),
-    SODA_OBSIDIAN(
+    )
+    val SODA_OBSIDIAN = ThemePreset(
         id = "soda_obsidian",
         title = "黑曜极光",
         subtitle = "深空曜黑与现代薄荷绿，Spotify 与 Cursor 级工业暗黑美学",
@@ -137,8 +137,8 @@ enum class ThemePreset(
         textSecondary = Color(0xFF94A3B8),
         glassSurface = Color(0xCC11141E),
         glassBorder = Color(0xFF1E2638)
-    ),
-    VINTAGE_AMBER(
+    )
+    val VINTAGE_AMBER = ThemePreset(
         id = "vintage_amber",
         title = "胡桃琥珀",
         subtitle = "低噪暖木与金琥珀微光，经典德生/猫王电台工业指针质感",
@@ -152,8 +152,8 @@ enum class ThemePreset(
         textSecondary = Color(0xFFD97706),
         glassSurface = Color(0xCC161310),
         glassBorder = Color(0xFF2A221C)
-    ),
-    AURORA_EMERALD(
+    )
+    val AURORA_EMERALD = ThemePreset(
         id = "aurora_emerald",
         title = "静谧苍翠",
         subtitle = "北欧冷杉与静谧翡翠碧波，山林溪流呼吸般的通透感",
@@ -167,8 +167,8 @@ enum class ThemePreset(
         textSecondary = Color(0xFF6EE7B7),
         glassSurface = Color(0xCC0D1C18),
         glassBorder = Color(0xFF1B362F)
-    ),
-    CYBER_NEON(
+    )
+    val CYBER_NEON = ThemePreset(
         id = "cyber_neon",
         title = "未来霓虹",
         subtitle = "电子罗兰紫与脉冲深蓝，跃动未来感低音电波",
@@ -182,8 +182,8 @@ enum class ThemePreset(
         textSecondary = Color(0xFFC084FC),
         glassSurface = Color(0xCC131022),
         glassBorder = Color(0xFF262040)
-    ),
-    SUNSET_GLOW(
+    )
+    val SUNSET_GLOW = ThemePreset(
         id = "sunset_glow",
         title = "落日余晖",
         subtitle = "加州暮色珊瑚暖橙与微醺晚霞，温暖治愈的情绪陪伴",
@@ -197,12 +197,24 @@ enum class ThemePreset(
         textSecondary = Color(0xFFFDA4AF),
         glassSurface = Color(0xCC1D1019),
         glassBorder = Color(0xFF382030)
-    );
+    )
+
+    fun withPrimary(color: Color): ThemePreset = ThemePreset(
+        id = id, title = title, subtitle = subtitle,
+        primary = color, secondary = color, accent = accent,
+        background = background, surface = surface, surfaceVariant = surfaceVariant,
+        textPrimary = textPrimary, textSecondary = textSecondary,
+        glassSurface = glassSurface, glassBorder = glassBorder,
+        isDark = isDark, indicatorColor = color
+    )
 
     companion object {
-        fun fromId(id: String): ThemePreset = entries.firstOrNull { it.id == id } ?: LUNAR_LIGHT
-        val lightPresets: List<ThemePreset> get() = entries.filter { !it.isDark }
-        val darkPresets: List<ThemePreset> get() = entries.filter { it.isDark }
+        private val PRESETS = listOf(
+            LUNAR_LIGHT, PORCELAIN_JADE, SUNLIT_AMBER, CHERRY_BLOSSOM, FROSTED_SILVER, MATCHA_MIST, SODA_OBSIDIAN, VINTAGE_AMBER, AURORA_EMERALD, CYBER_NEON, SUNSET_GLOW
+        )
+        fun fromId(id: String): ThemePreset = PRESETS.firstOrNull { it.id == id } ?: LUNAR_LIGHT
+        val lightPresets: List<ThemePreset> get() = PRESETS.filter { !it.isDark }
+        val darkPresets: List<ThemePreset> get() = PRESETS.filter { it.isDark }
     }
 }
 
