@@ -21,6 +21,7 @@ class ThemePreset(
     val isDark: Boolean = true,
     val indicatorColor: Color = primary
 ) {
+    companion object {
     val LUNAR_LIGHT = ThemePreset(
         id = "lunar_light",
         title = "钛空雅素",
@@ -208,7 +209,7 @@ class ThemePreset(
         isDark = isDark, indicatorColor = color
     )
 
-    companion object {
+
         private val PRESETS = listOf(
             LUNAR_LIGHT, PORCELAIN_JADE, SUNLIT_AMBER, CHERRY_BLOSSOM, FROSTED_SILVER, MATCHA_MIST, SODA_OBSIDIAN, VINTAGE_AMBER, AURORA_EMERALD, CYBER_NEON, SUNSET_GLOW
         )
