@@ -1416,6 +1416,7 @@ fun StudioDrawerSheet(
             containerColor = DragonTheme.surface,
             shape = RoundedCornerShape(16.dp)
         )
+    }
 }
 
 /**
