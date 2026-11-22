@@ -47,12 +47,30 @@ fun DragonFMTheme(
         )
     }
 
+    val baseTypography = Typography()
+    val typography = if (customFontFamily == null) baseTypography else baseTypography.copy(
+        displayLarge = baseTypography.displayLarge.copy(fontFamily = customFontFamily),
+        displayMedium = baseTypography.displayMedium.copy(fontFamily = customFontFamily),
+        displaySmall = baseTypography.displaySmall.copy(fontFamily = customFontFamily),
+        headlineLarge = baseTypography.headlineLarge.copy(fontFamily = customFontFamily),
+        headlineMedium = baseTypography.headlineMedium.copy(fontFamily = customFontFamily),
+        headlineSmall = baseTypography.headlineSmall.copy(fontFamily = customFontFamily),
+        titleLarge = baseTypography.titleLarge.copy(fontFamily = customFontFamily),
+        titleMedium = baseTypography.titleMedium.copy(fontFamily = customFontFamily),
+        titleSmall = baseTypography.titleSmall.copy(fontFamily = customFontFamily),
+        bodyLarge = baseTypography.bodyLarge.copy(fontFamily = customFontFamily),
+        bodyMedium = baseTypography.bodyMedium.copy(fontFamily = customFontFamily),
+        bodySmall = baseTypography.bodySmall.copy(fontFamily = customFontFamily),
+        labelLarge = baseTypography.labelLarge.copy(fontFamily = customFontFamily),
+        labelMedium = baseTypography.labelMedium.copy(fontFamily = customFontFamily),
+        labelSmall = baseTypography.labelSmall.copy(fontFamily = customFontFamily)
+    )
     CompositionLocalProvider(
         LocalDragonTheme provides appliedPreset
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = Typography(defaultFontFamily = customFontFamily ?: FontFamily.Default),
+            typography = typography,
             content = content
         )
     }
