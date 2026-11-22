@@ -1,6 +1,5 @@
 package com.dragon.fm.ui.screens
 
-import com.dragon.fm.data.model.LiveSubtitleState
 import com.dragon.fm.data.model.PlayerCoverStyle
 import com.dragon.fm.data.model.QuickActionButton
 import com.dragon.fm.data.model.SubtitleFontSize
@@ -9,7 +8,6 @@ import com.dragon.fm.ui.components.LiveLyricsCard
 import com.dragon.fm.ui.components.SingleLineLyricBar
 import com.dragon.fm.ui.components.SquareAlbumCover
 import com.dragon.fm.ui.components.VinylRecordDisc
-import com.dragon.fm.ui.components.AsrModelDownloadDialog
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
@@ -130,7 +128,6 @@ import androidx.compose.material.icons.filled.Check
 
 import androidx.compose.material.icons.filled.Close
 
-import androidx.compose.material.icons.filled.DirectionsCar
 
 import androidx.compose.material.icons.filled.Favorite
 
@@ -276,7 +273,6 @@ import com.dragon.fm.data.model.RadioStation
 
 import com.dragon.fm.ui.components.AddToScenarioBottomSheet
 
-import com.dragon.fm.ui.components.FloatingRecognitionResultBanner
 
 import com.dragon.fm.ui.components.WaveFlowRhythmVisualizer
 
@@ -299,7 +295,6 @@ import com.dragon.fm.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
 
 import kotlinx.coroutines.launch
-
 
 
 /**
@@ -417,7 +412,6 @@ fun AudioEqualizerWave(
         )
 
 
-
         Canvas(modifier = modifier.size(width = 13.dp, height = 18.dp)) {
 
             val barWidth = 2.5.dp.toPx()
@@ -455,7 +449,6 @@ fun AudioEqualizerWave(
 }
 
 
-
 @Composable
 
 fun DragonFlowScreen(
@@ -468,7 +461,6 @@ fun DragonFlowScreen(
 
     onOpenStudio: () -> Unit,
 
-    onOpenCarMode: () -> Unit,
 
     onToggleSleepMode: () -> Unit,
 
@@ -506,7 +498,6 @@ fun DragonFlowScreen(
     val isDark = DragonTheme.isDark
 
 
-
     val configuration = LocalConfiguration.current
 
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -514,7 +505,6 @@ fun DragonFlowScreen(
     val isTablet = configuration.screenWidthDp >= 600
 
     val isExpandedLayout = isLandscape || isTablet
-
 
 
     // Ambient extension color cache for stations (sampled from icon/cover art)
@@ -536,7 +526,6 @@ fun DragonFlowScreen(
     } ?: DragonTheme.primary
 
 
-
     val animatedAmbientColor by animateColorAsState(
 
         targetValue = targetAmbientColor,
@@ -548,17 +537,9 @@ fun DragonFlowScreen(
     )
 
 
-
-    val floatingSong by viewModel.floatingRecognizedSong.collectAsState()
-
-    val recognitionState by viewModel.recognitionState.collectAsState()
-
-
-
     var showQuitDialog by remember { mutableStateOf(false) }
 
     var stationToAddToScenario by remember { mutableStateOf<RadioStation?>(null) }
-
 
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -568,12 +549,9 @@ fun DragonFlowScreen(
             // Tablet / Foldable / Landscape console mode
 
             val isLyricsModeActive by viewModel.isLyricsModeActive.collectAsState()
-            val subtitleState by viewModel.subtitleState.collectAsState()
             val songLyricState by viewModel.songLyricState.collectAsState()
-            val lyricsDisplayMode by viewModel.lyricsDisplayMode.collectAsState()
             val playerCoverStyle by viewModel.playerCoverStyle.collectAsState()
             val showChannelTags by viewModel.showChannelTags.collectAsState()
-            val showLiveSubtitles by viewModel.showLiveSubtitles.collectAsState()
             val subtitleFontSizeOption by viewModel.subtitleFontSizeOption.collectAsState()
             val soundEffectMode by viewModel.soundEffectMode.collectAsState()
             LandscapeTabletFlowContent(
@@ -590,31 +568,19 @@ fun DragonFlowScreen(
                 stationAmbientColors = stationAmbientColors,
                 isDark = isDark,
                 isDefaultBg = isDefaultBg,
-                recognitionState = recognitionState,
-                subtitleState = subtitleState,
                 songLyricState = songLyricState,
-                lyricsDisplayMode = lyricsDisplayMode,
                 isLyricsModeActive = isLyricsModeActive,
                 playerCoverStyle = playerCoverStyle,
                 showChannelTags = showChannelTags,
-                showLiveSubtitles = showLiveSubtitles,
                 subtitleFontSizeOption = subtitleFontSizeOption,
                 soundEffectMode = soundEffectMode,
                 onOpenSoundEffect = { viewModel.openSoundEffectSheet() },
-                onToggleSubtitle = { enabled -> viewModel.setSubtitleEnabled(enabled) },
                 onToggleLyricsMode = { viewModel.toggleLyricsMode() },
-                onToggleLyricsDisplayMode = { viewModel.toggleLyricsDisplayMode() },
-                onSwitchLyricsDisplayMode = { mode -> viewModel.setLyricsDisplayMode(mode) },
 
                 onCloseLyrics = { viewModel.setLyricsModeActive(false) },
 
-                onClearSubtitles = { viewModel.clearSubtitles() },
 
-                onCopyAll = { viewModel.copyAllSubtitles() },
-
-                onCopySingle = { text -> viewModel.copySingleSubtitle(text) },
-
-                onAdjustFontSize = { size -> viewModel.setSubtitleFontSize(size) },
+                onCycleFontSize = { viewModel.setSubtitleFontSizeOption(subtitleFontSizeOption.next()) },
 
                 onSelectStation = { index -> viewModel.playStationAtIndex(index) },
 
@@ -628,7 +594,6 @@ fun DragonFlowScreen(
 
                 onToggleRecording = { viewModel.toggleRecording() },
 
-                onOpenRecognition = { viewModel.openMusicRecognition() },
 
                 onToggleSleepMode = onToggleSleepMode,
 
@@ -636,7 +601,6 @@ fun DragonFlowScreen(
 
                 onSortByLatency = { viewModel.sortPlaylistByLatency() },
 
-                onOpenCarMode = onOpenCarMode,
 
                 onOpenStudio = onOpenStudio,
 
@@ -690,7 +654,6 @@ fun DragonFlowScreen(
 
                 isDefaultBg = isDefaultBg,
 
-                recognitionState = recognitionState,
 
                 fontScale = fontScale,
 
@@ -706,13 +669,11 @@ fun DragonFlowScreen(
 
                 onToggleRecording = { viewModel.toggleRecording() },
 
-                onOpenRecognition = { viewModel.openMusicRecognition() },
 
                 onToggleSleepMode = onToggleSleepMode,
 
                 onRunSpeedTest = { viewModel.runPlaylistSpeedTest() },
 
-                onOpenCarMode = onOpenCarMode,
 
                 onOpenStudio = onOpenStudio,
 
@@ -743,21 +704,7 @@ fun DragonFlowScreen(
         }
 
 
-
-        // Silent Recognition Floating Result Banner
-
-        FloatingRecognitionResultBanner(
-
-            song = floatingSong,
-
-            onDismiss = { viewModel.dismissFloatingRecognizedSong() },
-
-            modifier = Modifier
-
-                .statusBarsPadding()
-
-                .zIndex(250f)
-
+        
                 .align(Alignment.TopCenter)
 
         )
@@ -853,21 +800,7 @@ fun DragonFlowScreen(
 
     }
 
-    val showAsrDownloadDialog by viewModel.showAsrDownloadDialog.collectAsState()
-    val asrModelState by viewModel.asrModelState.collectAsState()
-    val currentAsrModelType by viewModel.currentAsrModelType.collectAsState()
-
-    if (showAsrDownloadDialog) {
-        AsrModelDownloadDialog(
-            modelState = asrModelState,
-            currentModelType = currentAsrModelType,
-            onDismiss = { viewModel.closeAsrDownloadDialog() },
-            onSelectModelType = { viewModel.setAsrModelType(it) },
-            onStartDownload = { type -> viewModel.startDownloadAsrModel(type) },
-            onCancelDownload = { viewModel.cancelDownloadAsrModel() }
-        )
-    }
-
+    
 
 
     stationToAddToScenario?.let { station ->
@@ -907,7 +840,6 @@ fun DragonFlowScreen(
 }
 
 
-
 /**
 
  * Tablet & Landscape Dual-Pane Adaptive Console Layout
@@ -944,33 +876,21 @@ private fun LandscapeTabletFlowContent(
 
     isDefaultBg: Boolean = true,
 
-    recognitionState: com.dragon.fm.data.model.RecognitionState = com.dragon.fm.data.model.RecognitionState.Idle,
 
     fontScale: Float = 1.0f,
 
-    subtitleState: LiveSubtitleState = LiveSubtitleState(),
     songLyricState: com.dragon.fm.data.model.LiveSongLyricsState = com.dragon.fm.data.model.LiveSongLyricsState(),
-    lyricsDisplayMode: com.dragon.fm.data.model.LyricsDisplayMode = com.dragon.fm.data.model.LyricsDisplayMode.AI_SUBTITLE,
     isLyricsModeActive: Boolean = false,
     playerCoverStyle: PlayerCoverStyle = PlayerCoverStyle.VINYL,
     showChannelTags: Boolean = true,
-    showLiveSubtitles: Boolean = true,
     subtitleFontSizeOption: SubtitleFontSize = SubtitleFontSize.STANDARD,
     soundEffectMode: com.dragon.fm.player.SoundEffectMode = com.dragon.fm.player.SoundEffectMode.ORIGINAL,
     onOpenSoundEffect: () -> Unit = {},
-    onToggleSubtitle: (Boolean) -> Unit = {},
     onToggleLyricsMode: () -> Unit = {},
-    onToggleLyricsDisplayMode: () -> Unit = {},
-    onSwitchLyricsDisplayMode: (com.dragon.fm.data.model.LyricsDisplayMode) -> Unit = {},
     onCloseLyrics: () -> Unit = {},
 
-    onClearSubtitles: () -> Unit = {},
 
-    onCopyAll: () -> Unit = {},
-
-    onCopySingle: (String) -> Unit = {},
-
-    onAdjustFontSize: (Float) -> Unit = {},
+    onCycleFontSize: () -> Unit = {},
 
     onSelectStation: (Int) -> Unit,
 
@@ -984,7 +904,6 @@ private fun LandscapeTabletFlowContent(
 
     onToggleRecording: () -> Unit,
 
-    onOpenRecognition: () -> Unit = {},
 
     onToggleSleepMode: () -> Unit,
 
@@ -992,7 +911,6 @@ private fun LandscapeTabletFlowContent(
 
     onSortByLatency: () -> Unit,
 
-    onOpenCarMode: () -> Unit,
 
     onOpenStudio: () -> Unit,
 
@@ -1021,7 +939,6 @@ private fun LandscapeTabletFlowContent(
     var showHeartPop by remember { mutableStateOf(false) }
 
 
-
     val currentStation = playlist.getOrNull(currentIndex)
 
     val latency = currentStation?.let { latencies[it.id] }
@@ -1031,7 +948,6 @@ private fun LandscapeTabletFlowContent(
     val isBuffering = playerState.status == PlaybackStatus.BUFFERING
 
     val isFav = currentStation?.id?.let { favoriteIds.contains(it) } == true
-
 
 
     val fallbackStationColor = currentStation?.let {
@@ -1047,13 +963,11 @@ private fun LandscapeTabletFlowContent(
     } ?: animatedAmbientColor
 
 
-
     val listState = rememberLazyListState()
 
     val actualSong = playerState.nowPlayingTitle.takeIf {
         it.isNotBlank() && !it.equals(currentStation?.name, ignoreCase = true) && !it.contains("正在载入", ignoreCase = true)
     } ?: currentStation?.currentProgram?.let { "正在直播：$it" }
-
 
 
     // Smoothly scroll station playlist to current playing station
@@ -1069,7 +983,6 @@ private fun LandscapeTabletFlowContent(
         }
 
     }
-
 
 
     Box(
@@ -1141,7 +1054,6 @@ private fun LandscapeTabletFlowContent(
         }
 
 
-
         // Left Ambient Radial Diffusion Glow (matches the station's cover art)
 
         Box(
@@ -1179,9 +1091,7 @@ private fun LandscapeTabletFlowContent(
         )
 
 
-
         val isCompactLandscape = screenHeight < 480.dp
-
 
 
         // Main Dual-Pane Structure
@@ -1307,38 +1217,10 @@ private fun LandscapeTabletFlowContent(
                         }
 
 
-
                     }
 
 
-
                     Row(verticalAlignment = Alignment.CenterVertically) {
-
-                        // Car HUD quick entry
-
-                        IconButton(
-
-                            onClick = onOpenCarMode,
-
-                            modifier = Modifier.size(24.dp)
-
-                        ) {
-
-                            Icon(
-
-                                imageVector = Icons.Default.DirectionsCar,
-
-                                contentDescription = "Car HUD",
-
-                                tint = DragonTheme.textSecondary,
-
-                                modifier = Modifier.size(16.dp)
-
-                            )
-
-                        }
-
-                        Spacer(modifier = Modifier.width(6.dp))
 
                         // Power Exit quick entry
 
@@ -1369,7 +1251,6 @@ private fun LandscapeTabletFlowContent(
                 }
 
 
-
                 // Adaptive Album Cover Dimension (compact for landscape phone, expansive for tablet)
 
                 val coverDimension = if (isCompactLandscape) {
@@ -1381,7 +1262,6 @@ private fun LandscapeTabletFlowContent(
                     minOf(screenWidth * 0.28f, screenHeight * 0.42f, 260.dp)
 
                 }
-
 
 
                 if (currentStation != null) {
@@ -1437,7 +1317,6 @@ private fun LandscapeTabletFlowContent(
                 }
 
 
-
                 // Track & Station Metadata
 
                 Column(
@@ -1471,7 +1350,6 @@ private fun LandscapeTabletFlowContent(
                     }
 
 
-
                     Text(
                         text = currentStation?.name ?: "LX FM",
                         color = DragonTheme.textPrimary,
@@ -1483,9 +1361,7 @@ private fun LandscapeTabletFlowContent(
                     )
 
 
-
                     Spacer(modifier = Modifier.height(if (isCompactLandscape) 2.dp else 4.dp))
-
 
 
                     if (currentStation != null) {
@@ -1501,7 +1377,6 @@ private fun LandscapeTabletFlowContent(
                         val categoryTags = remember(currentStation.id) { allTags.filter { !it.isRegion } }
 
                         val regionQuery = regionTag?.searchQuery ?: regionStr
-
 
 
                         if (isCompactLandscape) {
@@ -1579,9 +1454,7 @@ private fun LandscapeTabletFlowContent(
                                 }
 
 
-
                                 Spacer(modifier = Modifier.width(5.dp))
-
 
 
                                 Surface(
@@ -1708,7 +1581,6 @@ private fun LandscapeTabletFlowContent(
                             }
 
 
-
                             if (showChannelTags) {
                                 Spacer(modifier = Modifier.height(5.dp))
 
@@ -1776,7 +1648,6 @@ private fun LandscapeTabletFlowContent(
                                     }
 
 
-
                                     if (categoryTags.isNotEmpty()) {
 
                                         LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1811,15 +1682,11 @@ private fun LandscapeTabletFlowContent(
                     }
                 }
 
-                if (showLiveSubtitles && !isLyricsModeActive) {
+                if (songLyricState.song != null && !isLyricsModeActive) {
                     Spacer(modifier = Modifier.height(if (isCompactLandscape) 3.dp else 6.dp))
                     SingleLineLyricBar(
-                        subtitleState = subtitleState,
                         songLyricState = songLyricState,
-                        displayMode = lyricsDisplayMode,
                         onClick = onToggleLyricsMode,
-                        onToggleSubtitle = onToggleSubtitle,
-                        onToggleDisplayMode = onToggleLyricsDisplayMode,
                         modifier = Modifier
                             .fillMaxWidth(0.92f)
                             .align(Alignment.CenterHorizontally)
@@ -1838,7 +1705,6 @@ private fun LandscapeTabletFlowContent(
                     val sideIconSize = if (isCompactLandscape) 20.dp else 24.dp
                     val playBtnSize = if (isCompactLandscape) 48.dp else 56.dp
                     val playIconSize = if (isCompactLandscape) 24.dp else 28.dp
-
 
 
                     // Previous Station
@@ -1870,7 +1736,6 @@ private fun LandscapeTabletFlowContent(
                         )
 
                     }
-
 
 
                     // Main Play / Pause Capsule
@@ -1960,7 +1825,6 @@ private fun LandscapeTabletFlowContent(
                     }
 
 
-
                     // Next Station
 
                     IconButton(
@@ -1990,7 +1854,6 @@ private fun LandscapeTabletFlowContent(
                         )
 
                     }
-
 
 
                     // Favorite Button
@@ -2024,7 +1887,6 @@ private fun LandscapeTabletFlowContent(
                     }
 
                 }
-
 
 
                 // Audio Stream Gradient Bar
@@ -2068,7 +1930,6 @@ private fun LandscapeTabletFlowContent(
             }
 
 
-
             // ==========================================
 
             // RIGHT PANE: Control Center & Live Station Playlist (58% Width)
@@ -2083,12 +1944,7 @@ private fun LandscapeTabletFlowContent(
             ) {
                 if (isLyricsModeActive) {
                     LiveLyricsCard(
-                        subtitleState = subtitleState,
-                        stationName = currentStation?.name ?: "",
                         songLyricState = songLyricState,
-                        displayMode = lyricsDisplayMode,
-                        onSwitchDisplayMode = onSwitchLyricsDisplayMode,
-                        currentProgram = actualSong,
                         fontSizeOption = subtitleFontSizeOption,
                         modifier = Modifier
                             .fillMaxSize()
@@ -2096,17 +1952,7 @@ private fun LandscapeTabletFlowContent(
                             .background(DragonTheme.surface.copy(alpha = if (isDark) 0.55f else 0.75f))
                             .border(0.5.dp, DragonTheme.glassBorder, RoundedCornerShape(18.dp)),
                         onCloseLyrics = onCloseLyrics,
-                        onToggleSubtitle = onToggleSubtitle,
-                        onClearSubtitles = onClearSubtitles,
-                        onCopyAll = onCopyAll,
-                        onCopySingle = onCopySingle,
-                        onAdjustFontSize = onAdjustFontSize,
-                        onCycleFontSize = {
-                            val next = subtitleFontSizeOption.next()
-                            onAdjustFontSize(next.activeSp)
-                        },
-                        recognitionState = recognitionState,
-                        onTriggerRecognition = onOpenRecognition
+                        onCycleFontSize = onCycleFontSize,
                     )
                 } else {
                     // 1. Tool Capsule Bar (Horizontal Scrollable for Quick Operations)
@@ -2177,7 +2023,6 @@ private fun LandscapeTabletFlowContent(
                     }
 
 
-
                     // Recording
 
                     item {
@@ -2233,82 +2078,6 @@ private fun LandscapeTabletFlowContent(
                     }
 
 
-
-                    // Music Recognition (听歌识曲：纯按钮状态反馈，无多余弹窗与麦克风)
-                    item {
-                        val isRecognizing = recognitionState is com.dragon.fm.data.model.RecognitionState.Sampling ||
-                                recognitionState is com.dragon.fm.data.model.RecognitionState.Fingerprinting ||
-                                recognitionState is com.dragon.fm.data.model.RecognitionState.QueryingCloud
-                        val isSuccess = recognitionState is com.dragon.fm.data.model.RecognitionState.Success
-                        val isFailed = recognitionState is com.dragon.fm.data.model.RecognitionState.NoMatch ||
-                                recognitionState is com.dragon.fm.data.model.RecognitionState.Error
-
-                        val recogRotation by if (isRecognizing) {
-                            val transition = rememberInfiniteTransition(label = "recog_spin_land")
-                            transition.animateFloat(
-                                initialValue = 0f,
-                                targetValue = 360f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(1200, easing = LinearEasing),
-                                    repeatMode = RepeatMode.Restart
-                                ),
-                                label = "spin_land"
-                            )
-                        } else {
-                            remember { mutableStateOf(0f) }
-                        }
-
-                        val recogColor = when {
-                            isRecognizing -> DragonCyan
-                            isSuccess -> Color(0xFF10B981)
-                            isFailed -> Color(0xFFF59E0B)
-                            else -> DragonTheme.primary
-                        }
-
-                        val recogText = when {
-                            isRecognizing -> "识别中..."
-                            isSuccess -> "已识别"
-                            isFailed -> "未找到"
-                            else -> "识曲"
-                        }
-
-                        val recogIcon = when {
-                            isSuccess -> Icons.Default.Check
-                            isFailed -> Icons.Default.PriorityHigh
-                            else -> Icons.Default.GraphicEq
-                        }
-
-                        Surface(
-                            onClick = onOpenRecognition,
-                            shape = RoundedCornerShape(14.dp),
-                            color = recogColor.copy(alpha = if (isRecognizing || isSuccess) 0.22f else 0.12f),
-                            border = BorderStroke(1.dp, recogColor.copy(alpha = if (isRecognizing || isSuccess) 0.8f else 0.35f))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = recogIcon,
-                                    contentDescription = "Recognize",
-                                    tint = recogColor,
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .graphicsLayer { rotationZ = recogRotation }
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = recogText,
-                                    color = recogColor,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-
-
-
                     // Sleep Timer
 
                     item {
@@ -2362,7 +2131,6 @@ private fun LandscapeTabletFlowContent(
                         }
 
                     }
-
 
 
                     // Sound Effect Entry (音效模式)
@@ -2450,7 +2218,6 @@ private fun LandscapeTabletFlowContent(
                     }
 
 
-
                     // Library Entry
 
                     item {
@@ -2508,7 +2275,6 @@ private fun LandscapeTabletFlowContent(
                 }
 
 
-
                 // Subheader
 
                 Row(
@@ -2558,7 +2324,6 @@ private fun LandscapeTabletFlowContent(
                 }
 
 
-
                 // Live Station Playlist LazyColumn
 
                 LazyColumn(
@@ -2580,7 +2345,6 @@ private fun LandscapeTabletFlowContent(
                         val isItemCurrent = index == currentIndex
 
                         val isItemPlaying = isItemCurrent && isPlaying
-
 
 
                         Surface(
@@ -2660,9 +2424,7 @@ private fun LandscapeTabletFlowContent(
                                 }
 
 
-
                                 Spacer(modifier = Modifier.width(10.dp))
-
 
 
                                 // Station Name & Details
@@ -2706,7 +2468,6 @@ private fun LandscapeTabletFlowContent(
                                 }
 
 
-
                                 // Right status: Equalizer wave
 
                                 if (isItemCurrent) {
@@ -2733,7 +2494,6 @@ private fun LandscapeTabletFlowContent(
                 }
             }
         }
-
 
 
         // Double-tap heart pop up overlay
@@ -2765,7 +2525,6 @@ private fun LandscapeTabletFlowContent(
         }
     }
 }
-
 
 
 /**
@@ -2810,7 +2569,6 @@ private fun PortraitFlowContent(
 
     isDefaultBg: Boolean = true,
 
-    recognitionState: com.dragon.fm.data.model.RecognitionState = com.dragon.fm.data.model.RecognitionState.Idle,
 
     fontScale: Float = 1.0f,
 
@@ -2828,13 +2586,11 @@ private fun PortraitFlowContent(
 
     onToggleRecording: () -> Unit,
 
-    onOpenRecognition: () -> Unit = {},
 
     onToggleSleepMode: () -> Unit,
 
     onRunSpeedTest: () -> Unit,
 
-    onOpenCarMode: () -> Unit,
 
     onOpenStudio: () -> Unit,
 
@@ -2862,9 +2618,7 @@ private fun PortraitFlowContent(
 
     val scope = rememberCoroutineScope()
     val isLyricsModeActive by viewModel.isLyricsModeActive.collectAsState()
-    val subtitleState by viewModel.subtitleState.collectAsState()
     val songLyricState by viewModel.songLyricState.collectAsState()
-    val lyricsDisplayMode by viewModel.lyricsDisplayMode.collectAsState()
     val soundEffectMode by viewModel.soundEffectMode.collectAsState()
 
     val playerCoverStyle by viewModel.playerCoverStyle.collectAsState()
@@ -2873,7 +2627,6 @@ private fun PortraitFlowContent(
     val quickActionButtons by viewModel.quickActionButtons.collectAsState()
     val swipeRightAction by viewModel.swipeRightAction.collectAsState()
     val swipeLeftAction by viewModel.swipeLeftAction.collectAsState()
-    val showLiveSubtitles by viewModel.showLiveSubtitles.collectAsState()
     val subtitleFontSizeOption by viewModel.subtitleFontSizeOption.collectAsState()
     val isPlaying = playerState.status == com.dragon.fm.data.model.PlaybackStatus.PLAYING
 
@@ -3150,7 +2903,6 @@ private fun PortraitFlowContent(
     }
 
 
-
     Box(
 
         modifier = Modifier
@@ -3320,7 +3072,6 @@ private fun PortraitFlowContent(
         )
 
 
-
         // Vertical ambient wash extending color downwards smoothly
 
         Box(
@@ -3350,7 +3101,6 @@ private fun PortraitFlowContent(
                 )
 
         )
-
 
 
         // Vertical Pager (TikTok / Soda Music style swipe-to-switch stations)
@@ -3385,7 +3135,6 @@ private fun PortraitFlowContent(
                 val latency = latencies[station.id]
 
 
-
                 val defaultHarmonic = remember(station.id, isDark) {
 
                     StationColorExtractor.getHarmonicColor(station, isDark)
@@ -3393,7 +3142,6 @@ private fun PortraitFlowContent(
                 }
 
                 val stationAmbient = stationAmbientColors[station.id] ?: defaultHarmonic
-
 
 
                 Box(
@@ -3441,7 +3189,6 @@ private fun PortraitFlowContent(
                         )
 
                     }
-
 
 
                     // Dynamic Station Ambient Glow Mesh (Radiates the station's harmonic color)
@@ -3505,7 +3252,6 @@ private fun PortraitFlowContent(
                     )
 
 
-
                     // Scrim Gradient (Keep top translucent so ambient glow shines through)
 
                     Box(
@@ -3537,7 +3283,6 @@ private fun PortraitFlowContent(
                     )
 
 
-
                     val actualPlaying = playerState.nowPlayingTitle.takeIf {
                         it.isNotBlank() &&
                         !it.equals(station.name, ignoreCase = true) &&
@@ -3545,7 +3290,7 @@ private fun PortraitFlowContent(
                     } ?: station.currentProgram?.let { "正在直播：$it" }
 
                     val visualizerHeight = if (showRhythmVisualizer) (if (isTallScreen) 34.dp else 26.dp) else 0.dp
-                    val subtitleBarHeight = if (showLiveSubtitles) (if (isTallScreen) 34.dp else 28.dp) else 0.dp
+                    val subtitleBarHeight = if (songLyricState.song != null) (if (isTallScreen) 34.dp else 28.dp) else 0.dp
                     val actualPlayingHeight = if (actualPlaying != null) (if (isTallScreen) 18.dp else 16.dp) else 0.dp
                     val stationTitleHeight = if (isTallScreen) 28.dp else 24.dp
                     val liveCapsuleRowHeight = if (isTallScreen) 26.dp else 22.dp
@@ -3585,7 +3330,7 @@ private fun PortraitFlowContent(
                     val coverDimension = minOf(maxCoverAvailable, maxCoverByWidth, targetCover)
 
                     if (isLyricsModeActive) {
-                        // 沉浸式全屏实时字幕歌词瀑布流 (汽水音乐 / Apple Music 风格)
+                        // 沉浸式全屏同步歌词瀑布流 (汽水音乐 / Apple Music 风格)
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -3598,29 +3343,17 @@ private fun PortraitFlowContent(
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
                             LiveLyricsCard(
-                                subtitleState = subtitleState,
-                                stationName = station.name,
                                 songLyricState = songLyricState,
-                                displayMode = lyricsDisplayMode,
-                                onSwitchDisplayMode = { mode -> viewModel.setLyricsDisplayMode(mode) },
-                                currentProgram = actualPlaying,
                                 fontSizeOption = subtitleFontSizeOption,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f),
                                 onCloseLyrics = { viewModel.setLyricsModeActive(false) },
-                                onToggleSubtitle = { enabled -> viewModel.setSubtitleEnabled(enabled) },
-                                onClearSubtitles = { viewModel.clearSubtitles() },
-                                onCopyAll = { viewModel.copyAllSubtitles() },
-                                onCopySingle = { text -> viewModel.copySingleSubtitle(text) },
-                                onAdjustFontSize = { size -> viewModel.setSubtitleFontSize(size) },
                                 onCycleFontSize = {
                                     val next = subtitleFontSizeOption.next()
                                     viewModel.setSubtitleFontSizeOption(next)
                                     viewModel.showToast("字幕字号已设为: ${next.title}")
                                 },
-                                recognitionState = recognitionState,
-                                onTriggerRecognition = { viewModel.toggleMusicRecognition() }
                             )
 
                             // 底部：沉浸模式下隐藏操作按钮与标签，保留超纤细动感律动光带
@@ -3699,7 +3432,6 @@ private fun PortraitFlowContent(
                                 }
 
 
-
                                 Box(
 
                                     modifier = Modifier
@@ -3739,7 +3471,6 @@ private fun PortraitFlowContent(
                                         }
 
                                 )
-
 
 
                                 if (playerCoverStyle == PlayerCoverStyle.SQUARE) {
@@ -3801,19 +3532,11 @@ private fun PortraitFlowContent(
                                     .weight(coverToInfoWeight, fill = true)
                             )
 
-                            if (showLiveSubtitles) {
+                            if (songLyricState.song != null) {
                                 SingleLineLyricBar(
-                                    subtitleState = subtitleState,
                                     songLyricState = songLyricState,
-                                    displayMode = lyricsDisplayMode,
                                     onClick = {
                                         viewModel.toggleLyricsMode()
-                                    },
-                                    onToggleSubtitle = { enabled ->
-                                        viewModel.setSubtitleEnabled(enabled)
-                                    },
-                                    onToggleDisplayMode = {
-                                        viewModel.toggleLyricsDisplayMode()
                                     },
                                     modifier = Modifier
                                         .fillMaxWidth(0.92f)
@@ -3854,7 +3577,6 @@ private fun PortraitFlowContent(
                             Spacer(modifier = Modifier.height(if (isTallScreen) 8.dp else 4.dp))
 
 
-
                             // Live Status Pulse Pill + Region & Chinese Tags (only animate when actively playing)
 
                             val pulseAlpha by if (isPlaying) {
@@ -3886,9 +3608,7 @@ private fun PortraitFlowContent(
                             }
 
 
-
                             val isError = isCurrent && playerState.status == PlaybackStatus.ERROR
-
 
 
                             // 1. LIVE Status Breathing Capsule (Independent row between title and tags)
@@ -4109,7 +3829,6 @@ private fun PortraitFlowContent(
                             }
 
 
-
                             if (showChannelTags) {
                                 Spacer(modifier = Modifier.height(if (isTallScreen) 8.dp else 6.dp))
 
@@ -4214,28 +3933,9 @@ private fun PortraitFlowContent(
                             ) {
                                 val isFav = favoriteIds.contains(station.id)
                                 val voteDisplay = if (station.votes > 1000) "${station.votes / 1000}k" else "${station.votes}"
-                                val isRecognizing = recognitionState is com.dragon.fm.data.model.RecognitionState.Sampling ||
-                                        recognitionState is com.dragon.fm.data.model.RecognitionState.Fingerprinting ||
-                                        recognitionState is com.dragon.fm.data.model.RecognitionState.QueryingCloud
-                                val isSuccess = recognitionState is com.dragon.fm.data.model.RecognitionState.Success
-                                val isFailed = recognitionState is com.dragon.fm.data.model.RecognitionState.NoMatch ||
-                                        recognitionState is com.dragon.fm.data.model.RecognitionState.Error
                                 val isFxActive = soundEffectMode != com.dragon.fm.player.SoundEffectMode.ORIGINAL
 
-                                val recogRotation by if (isRecognizing) {
-                                    val transition = rememberInfiniteTransition(label = "recog_spin_port")
-                                    transition.animateFloat(
-                                        initialValue = 0f,
-                                        targetValue = 360f,
-                                        animationSpec = infiniteRepeatable(
-                                            animation = tween(1200, easing = LinearEasing),
-                                            repeatMode = RepeatMode.Restart
-                                        ),
-                                        label = "spin_port"
-                                    )
-                                } else {
-                                    remember { mutableStateOf(0f) }
-                                }
+                                                                }
 
                                 for (btn in quickActionButtons) {
                                     Box(
@@ -4306,55 +4006,6 @@ private fun PortraitFlowContent(
                                                     )
                                                 }
                                             }
-                                            QuickActionButton.RECOGNITION -> {
-                                                val recogColor = when {
-                                                    isRecognizing -> DragonCyan
-                                                    isSuccess -> Color(0xFF10B981)
-                                                    isFailed -> Color(0xFFF59E0B)
-                                                    else -> DragonTheme.primary
-                                                }
-                                                val recogText = when {
-                                                    isRecognizing -> "识别中"
-                                                    isSuccess -> "已识别"
-                                                    isFailed -> "未找到"
-                                                    else -> "识曲"
-                                                }
-                                                val recogIcon = when {
-                                                    isSuccess -> Icons.Default.Check
-                                                    isFailed -> Icons.Default.PriorityHigh
-                                                    else -> Icons.Default.GraphicEq
-                                                }
-
-                                                Column(
-                                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                                    verticalArrangement = Arrangement.Center,
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clip(RoundedCornerShape(10.dp))
-                                                        .clickable { onOpenRecognition() }
-                                                        .padding(vertical = actionVerticalPadding, horizontal = 0.5.dp)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = recogIcon,
-                                                        contentDescription = "Recognize",
-                                                        tint = recogColor,
-                                                        modifier = Modifier
-                                                            .size(actionIconSize)
-                                                            .graphicsLayer { rotationZ = recogRotation }
-                                                    )
-                                                    Spacer(modifier = Modifier.height(actionIconTextSpacing))
-                                                    Text(
-                                                        text = recogText,
-                                                        color = recogColor,
-                                                        fontSize = actionTextSize,
-                                                        fontWeight = FontWeight.Bold,
-                                                        maxLines = 1,
-                                                        softWrap = false,
-                                                        overflow = TextOverflow.Ellipsis,
-                                                        textAlign = TextAlign.Center
-                                                    )
-                                                }
-                                            }
                                             QuickActionButton.SLEEP -> {
                                                 Column(
                                                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -4375,35 +4026,6 @@ private fun PortraitFlowContent(
                                                     Text(
                                                         text = if (sleepTimerSec != null) "${sleepTimerSec / 60}分" else "睡眠",
                                                         color = if (sleepTimerSec != null) DragonGold else DragonTheme.textSecondary,
-                                                        fontSize = actionTextSize,
-                                                        fontWeight = FontWeight.Medium,
-                                                        maxLines = 1,
-                                                        softWrap = false,
-                                                        overflow = TextOverflow.Ellipsis,
-                                                        textAlign = TextAlign.Center
-                                                    )
-                                                }
-                                            }
-                                            QuickActionButton.CAR -> {
-                                                Column(
-                                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                                    verticalArrangement = Arrangement.Center,
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clip(RoundedCornerShape(10.dp))
-                                                        .clickable { onOpenCarMode() }
-                                                        .padding(vertical = actionVerticalPadding, horizontal = 0.5.dp)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.DirectionsCar,
-                                                        contentDescription = "Car Mode",
-                                                        tint = DragonTheme.textSecondary,
-                                                        modifier = Modifier.size(actionIconSize)
-                                                    )
-                                                    Spacer(modifier = Modifier.height(actionIconTextSpacing))
-                                                    Text(
-                                                        text = "车载",
-                                                        color = DragonTheme.textSecondary,
                                                         fontSize = actionTextSize,
                                                         fontWeight = FontWeight.Medium,
                                                         maxLines = 1,
@@ -4496,7 +4118,6 @@ private fun PortraitFlowContent(
         }
 
 
-
         // Top Navigation Bar (≡ 模式选择 on left, 🔍 Search on right)
         if (!isLyricsModeActive) {
             Column(
@@ -4567,7 +4188,6 @@ private fun PortraitFlowContent(
                     )
 
                 }
-
 
 
                 Surface(
@@ -4662,7 +4282,6 @@ private fun PortraitFlowContent(
         }
 
 
-
         // Bottom Navigation Bar (🎧 发现 | ⚪ 播放键 | 👤 我的)
         Box(
             modifier = Modifier
@@ -4712,7 +4331,6 @@ private fun PortraitFlowContent(
                 }
 
 
-
                 // 2) 切上一台
                 IconButton(
                     onClick = onPrevious,
@@ -4726,7 +4344,6 @@ private fun PortraitFlowContent(
                         modifier = Modifier.size(prevNextIconSize)
                     )
                 }
-
 
 
                 // 3) 居中核心播放/暂停键
@@ -4772,7 +4389,6 @@ private fun PortraitFlowContent(
                 }
 
 
-
                 // 4) 切下一台
                 IconButton(
                     onClick = onNext,
@@ -4786,7 +4402,6 @@ private fun PortraitFlowContent(
                         modifier = Modifier.size(prevNextIconSize)
                     )
                 }
-
 
 
                 // 5) 我的 Tab
@@ -4816,7 +4431,6 @@ private fun PortraitFlowContent(
 
             }
         }
-
 
 
         // Double-tap heart pop up overlay
@@ -4880,7 +4494,6 @@ private fun PortraitFlowContent(
         }
 
 
-
         if (showPlaylistSheet) {
 
             PlaylistDrawerSheet(
@@ -4929,4 +4542,3 @@ private fun PortraitFlowContent(
     }
 }
 }
-
