@@ -7,8 +7,6 @@ import com.dragon.fm.data.api.RadioBrowserApi
 import com.dragon.fm.data.local.FavoritesRepository
 import com.dragon.fm.player.DragonMediaSessionService
 import com.dragon.fm.player.DragonRadioPlayer
-import com.dragon.fm.player.LiveStreamSubtitleManager
-import com.dragon.fm.player.MusicRecognitionManager
 import com.dragon.fm.player.RecorderManager
 import com.dragon.fm.player.SleepTimerManager
 
@@ -21,12 +19,6 @@ class DragonFmApp : Application() {
         private set
 
     lateinit var recorderManager: RecorderManager
-        private set
-
-    lateinit var musicRecognitionManager: MusicRecognitionManager
-        private set
-
-    lateinit var subtitleManager: LiveStreamSubtitleManager
         private set
 
     lateinit var audioSpectrumManager: com.dragon.fm.player.AudioSpectrumManager
@@ -53,8 +45,6 @@ class DragonFmApp : Application() {
         }
         favoritesRepository = FavoritesRepository(this)
         recorderManager = RecorderManager(this)
-        musicRecognitionManager = MusicRecognitionManager(this)
-        subtitleManager = LiveStreamSubtitleManager(this)
         audioSpectrumManager = com.dragon.fm.player.AudioSpectrumManager()
         radioPlayer.liveAudioCaptureProcessor.addPcmListener { pcm, sr, ch ->
             audioSpectrumManager.processPcm(pcm, sr, ch)
