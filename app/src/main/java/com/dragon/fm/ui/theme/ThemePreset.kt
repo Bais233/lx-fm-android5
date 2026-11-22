@@ -214,6 +214,7 @@ class ThemePreset(
     )
 
 
+        val presets: List<ThemePreset> get() = PRESETS
         private val PRESETS = listOf(
             LUNAR_LIGHT, PORCELAIN_JADE, SUNLIT_AMBER, CHERRY_BLOSSOM, FROSTED_SILVER, MATCHA_MIST, SODA_OBSIDIAN, VINTAGE_AMBER, AURORA_EMERALD, CYBER_NEON, SUNSET_GLOW
         )
