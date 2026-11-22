@@ -32,6 +32,7 @@ import androidx.compose.material3.RadioButtonDefaults
 import com.dragon.fm.data.model.AppBackgroundType
 import com.dragon.fm.data.model.BackgroundPresets
 import com.dragon.fm.data.model.BackgroundPreset
+import com.dragon.fm.data.model.PlaybackStatus
 import com.dragon.fm.data.model.PlayerCoverStyle
 import com.dragon.fm.data.model.QuickActionButton
 import com.dragon.fm.data.model.SubtitleFontSize
@@ -187,6 +188,15 @@ fun SettingsScreen(
     val showAsrDownloadDialog by viewModel.showAsrDownloadDialog.collectAsState()
 
     val updateCheckResult by viewModel.updateCheckResult.collectAsState()
+    val debugModeEnabled by viewModel.debugModeEnabled.collectAsState()
+    val debugTapCount by viewModel.debugVersionTapCount.collectAsState()
+    val playerDebugState by viewModel.playerState.collectAsState()
+
+    LaunchedEffect(debugTapCount) {
+        if (debugTapCount in 2..4) {
+            Toast.makeText(context, "再点 ${5 - debugTapCount} 次开启开发者模式", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(updateCheckResult) {
         when (val res = updateCheckResult) {
@@ -1160,6 +1170,7 @@ fun SettingsScreen(
                         actionLabel = if (updateCheckResult is UpdateCheckResult.Checking) "检查中..." else "检查更新",
                         actionColor = DragonTheme.primary,
                         onClick = {
+                            viewModel.onVersionRowTapped()
                             viewModel.checkForUpdates(isManual = true)
                         }
                     )
@@ -1179,6 +1190,35 @@ fun SettingsScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(18.dp))
+            }
+
+            // Section 6.5: Hidden developer options (仅调试模式解锁后可见)
+            if (debugModeEnabled) {
+                item {
+                    SettingsSectionHeader(title = "开发者选项", icon = Icons.Default.Bolt)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SettingsCard {
+                        SettingsSwitchRow(
+                            title = "调试模式",
+                            subtitle = "输出播放器详细日志（adb logcat 过滤 DragonFm）；关闭后本面板自动隐藏",
+                            checked = debugModeEnabled,
+                            onCheckedChange = { viewModel.setDebugModeEnabled(it) }
+                        )
+                        HorizontalDivider(color = DragonTheme.glassBorder, thickness = 0.5.dp)
+                        SettingsInfoRow(
+                            title = "当前播放状态",
+                            subtitle = playerDebugState.currentStation?.name ?: "未在播放",
+                            statusText = when (playerDebugState.status) {
+                                PlaybackStatus.PLAYING -> "直播中"
+                                PlaybackStatus.BUFFERING -> "缓冲"
+                                PlaybackStatus.PAUSED -> "已暂停"
+                                PlaybackStatus.ERROR -> "错误"
+                                PlaybackStatus.IDLE -> "空闲"
+                            }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(18.dp))
+                }
             }
 
             // Section 7: Application Control
