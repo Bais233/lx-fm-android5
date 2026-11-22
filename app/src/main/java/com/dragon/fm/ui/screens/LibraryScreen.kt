@@ -102,7 +102,6 @@ import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.dragon.fm.data.model.CustomScenarioMode
 import com.dragon.fm.data.model.RadioStation
-import com.dragon.fm.data.model.RecognizedSong
 import com.dragon.fm.player.RecordedFile
 import com.dragon.fm.ui.theme.DragonCyan
 import com.dragon.fm.ui.theme.DragonGold
@@ -115,8 +114,6 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.MicNone
 import androidx.compose.material.icons.outlined.Radio
 import androidx.compose.material.icons.outlined.Settings
-import com.dragon.fm.ui.components.AboutBrandCard
-import com.dragon.fm.ui.components.WechatQrDialog
 import com.dragon.fm.ui.theme.LiveRed
 import com.dragon.fm.ui.viewmodel.MainViewModel
 
@@ -127,13 +124,11 @@ fun LibraryScreen(
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
-    val tabs = listOf("我的收藏", "收听足迹", "录音库", "识曲足迹", "关于作者")
+    val tabs = listOf("我的收藏", "收听足迹", "录音库")
     val pagerState = rememberPagerState(initialPage = 0) { tabs.size }
     val scope = rememberCoroutineScope()
     var showAddCustomDialog by remember { mutableStateOf(false) }
     var showClearHistoryConfirm by remember { mutableStateOf(false) }
-    var showClearRecognitionConfirm by remember { mutableStateOf(false) }
-    var showWechatDialog by remember { mutableStateOf(false) }
     var renamingStation by remember { mutableStateOf<RadioStation?>(null) }
 
     val favoriteIds by viewModel.favoriteIds.collectAsState()
@@ -145,7 +140,6 @@ fun LibraryScreen(
     val localRecordingPositionMs by viewModel.localRecordingPositionMs.collectAsState()
     val localRecordingDurationMs by viewModel.localRecordingDurationMs.collectAsState()
     val localRecordingSpeed by viewModel.localRecordingSpeed.collectAsState()
-    val recognitionHistory by viewModel.recognitionHistory.collectAsState()
 
     LaunchedEffect(pagerState.currentPage) {
         if (pagerState.currentPage == 2) {
@@ -194,27 +188,6 @@ fun LibraryScreen(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = DragonTheme.glassSurface,
-                    border = BorderStroke(0.5.dp, DragonTheme.glassBorder),
-                    modifier = Modifier
-                        .clickable { showWechatDialog = true }
-                        .padding(end = 4.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "关注公众号",
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = DragonTheme.textSecondary
-                        )
-                    }
-                }
-
                 IconButton(onClick = onOpenSettings) {
                     Icon(
                         imageVector = Icons.Outlined.Settings,
@@ -468,112 +441,6 @@ fun LibraryScreen(
                     }
                 }
             }
-            3 -> {
-                // Recognition History Tab (识曲足迹)
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .navigationBarsPadding()
-                ) {
-                    if (recognitionHistory.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "共识别 ${recognitionHistory.size} 首歌曲",
-                                color = DragonTheme.textSecondary,
-                                fontSize = 12.sp
-                            )
-                            Surface(
-                                onClick = { showClearRecognitionConfirm = true },
-                                shape = RoundedCornerShape(8.dp),
-                                color = LiveRed.copy(alpha = 0.12f),
-                                border = BorderStroke(0.6.dp, LiveRed.copy(alpha = 0.35f))
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DeleteSweep,
-                                        contentDescription = "Clear",
-                                        tint = LiveRed,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "清空识曲",
-                                        color = LiveRed,
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    if (recognitionHistory.isEmpty()) {
-                        EmptyStatePlaceholder(
-                            title = "暂无识曲记录",
-                            subtitle = "在播放页轻触「识曲」，随时精准捕获心仪旋律",
-                            icon = Icons.Outlined.GraphicEq
-                        )
-                    } else {
-                        LazyVerticalGrid(
-                            columns = gridColumns,
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(recognitionHistory, key = { it.id }) { song ->
-                                RecognizedSongCard(
-                                    song = song,
-                                    onCopy = {
-                                        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                        cm.setPrimaryClip(ClipData.newPlainText("song", "${song.title} - ${song.artist}"))
-                                        Toast.makeText(context, "已复制: ${song.title} - ${song.artist}", Toast.LENGTH_SHORT).show()
-                                    },
-                                    onSearch = {
-                                        try {
-                                            val targetUrl = if (song.shazamUrl.isNotBlank()) {
-                                                song.shazamUrl
-                                            } else {
-                                                "https://www.shazam.com/search?q=" + Uri.encode("${song.title} ${song.artist}")
-                                            }
-                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl))
-                                            context.startActivity(intent)
-                                        } catch (_: Exception) {
-                                            Toast.makeText(context, "无法打开 Shazam 对应页面", Toast.LENGTH_SHORT).show()
-                                        }
-                                    },
-                                    onDelete = {
-                                        viewModel.deleteRecognizedSong(song.id)
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            4 -> {
-                // 关于作者与微信公众号宣传
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
-                        .navigationBarsPadding(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    AboutBrandCard()
-                    Spacer(modifier = Modifier.height(30.dp))
-                }
-            }
         }
     }
     }
@@ -653,44 +520,6 @@ fun LibraryScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showClearHistoryConfirm = false }) {
-                    Text("取消", color = DragonTheme.textSecondary)
-                }
-            }
-        )
-    }
-
-    // Wechat Official Account Dialog
-    if (showWechatDialog) {
-        WechatQrDialog(onDismiss = { showWechatDialog = false })
-    }
-
-    // Clear Recognition History Confirmation Dialog
-    if (showClearRecognitionConfirm) {
-        AlertDialog(
-            onDismissRequest = { showClearRecognitionConfirm = false },
-            containerColor = DragonTheme.surface,
-            title = { Text("清空识曲足迹", color = DragonTheme.textPrimary, fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    text = "确定要清空全部识别出的歌曲记录吗？此操作无法撤销。",
-                    color = DragonTheme.textSecondary,
-                    fontSize = 13.5.sp
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.clearRecognitionHistory()
-                        showClearRecognitionConfirm = false
-                        Toast.makeText(context, "识曲足迹已全部清空", Toast.LENGTH_SHORT).show()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = LiveRed)
-                ) {
-                    Text("确认清空", color = Color.White)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showClearRecognitionConfirm = false }) {
                     Text("取消", color = DragonTheme.textSecondary)
                 }
             }
@@ -1288,116 +1117,6 @@ private fun EmptyStatePlaceholder(
                 lineHeight = 18.sp,
                 textAlign = TextAlign.Center
             )
-        }
-    }
-}
-
-@Composable
-private fun RecognizedSongCard(
-    song: RecognizedSong,
-    onCopy: () -> Unit,
-    onSearch: () -> Unit,
-    onDelete: () -> Unit
-) {
-    val sdf = remember { java.text.SimpleDateFormat("yyyy/MM/dd HH:mm", java.util.Locale.getDefault()) }
-    val dateStr = remember(song.timestamp) { sdf.format(java.util.Date(song.timestamp)) }
-
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = DragonTheme.surface,
-        border = BorderStroke(1.dp, DragonTheme.glassBorder),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Cover Art
-            Box(
-                modifier = Modifier
-                    .size(54.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(DragonTheme.background)
-                    .border(0.8.dp, DragonTheme.glassBorder, RoundedCornerShape(10.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (song.coverArtUrl.isNotBlank()) {
-                    AsyncImage(
-                        model = song.coverArtUrl,
-                        contentDescription = song.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.MusicNote,
-                        contentDescription = null,
-                        tint = DragonTheme.primary,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = song.title,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = DragonTheme.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = song.artist + if (song.album.isNotBlank()) " • 《${song.album}》" else "",
-                    fontSize = 12.5.sp,
-                    color = DragonTheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "${if (song.stationName.isNotBlank()) "来源: ${song.stationName} • " else ""}$dateStr",
-                    fontSize = 11.sp,
-                    color = DragonTheme.textSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            // Copy Action
-            IconButton(onClick = onCopy) {
-                Icon(
-                    imageVector = Icons.Default.ContentCopy,
-                    contentDescription = "Copy",
-                    tint = DragonTheme.textSecondary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            // Search Action
-            IconButton(onClick = onSearch) {
-                Icon(
-                    imageVector = Icons.Default.OpenInNew,
-                    contentDescription = "Search",
-                    tint = DragonTheme.primary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            // Delete Action
-            IconButton(onClick = onDelete) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = LiveRed.copy(alpha = 0.8f),
-                    modifier = Modifier.size(18.dp)
-                )
-            }
         }
     }
 }
