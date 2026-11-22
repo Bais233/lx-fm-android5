@@ -146,11 +146,11 @@ fun SettingsScreen(
     val isFollowSystemTheme by viewModel.isFollowSystemTheme.collectAsState()
     val selectedLightThemeId by viewModel.selectedLightThemeId.collectAsState()
     val selectedDarkThemeId by viewModel.selectedDarkThemeId.collectAsState()
-    val displayedThemeId = if (appearanceMode == "MANUAL") currentTheme.id else if (DragonTheme.isDark) selectedDarkThemeId else selectedLightThemeId
     val appBackground by viewModel.appBackground.collectAsState()
     val isAutoPlayOnLaunch by viewModel.isAutoPlayOnLaunch.collectAsState()
     val fontScale by viewModel.fontScale.collectAsState()
     val appearanceMode by viewModel.appearanceMode.collectAsState()
+    val displayedThemeId = if (appearanceMode == "MANUAL") currentTheme.id else if (DragonTheme.isDark) selectedDarkThemeId else selectedLightThemeId
     val appearanceDay by viewModel.appearanceDayStart.collectAsState()
     val appearanceNight by viewModel.appearanceNightStart.collectAsState()
     val appearanceLatitude by viewModel.appearanceLatitude.collectAsState()
@@ -1377,55 +1377,6 @@ fun SettingsScreen(
         )
     }
 
-    // Clear ASR Model Dialog
-    if (showClearAsrModelConfirm) {
-        AlertDialog(
-            onDismissRequest = { showClearAsrModelConfirm = false },
-            title = {
-                Text(text = "清除离线语音模型", color = DragonTheme.textPrimary, fontWeight = FontWeight.Bold)
-            },
-            text = {
-                Text(
-                    text = "确定要删除已下载的端侧语音识别模型（约 29 MB）吗？清除后将释放存储空间，后续如需使用电台实时字幕需重新下载。",
-                    color = DragonTheme.textSecondary,
-                    fontSize = 13.5.sp
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showClearAsrModelConfirm = false
-                        val ok = viewModel.deleteAsrModel(deleteEngineAlso = true)
-                        if (ok) {
-                            Toast.makeText(context, "已清除全部离线语音识别模型及引擎组件", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = LiveRed)
-                ) {
-                    Text("确认清除", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showClearAsrModelConfirm = false }) {
-                    Text("取消", color = DragonTheme.textSecondary)
-                }
-            },
-            containerColor = DragonTheme.surface,
-            shape = RoundedCornerShape(16.dp)
-        )
-    }
-
-    if (showAsrDownloadDialog) {
-        AsrModelDownloadDialog(
-            modelState = asrModelState,
-            currentModelType = currentAsrModelType,
-            onDismiss = { viewModel.closeAsrDownloadDialog() },
-            onSelectModelType = { viewModel.setAsrModelType(it) },
-            onStartDownload = { type -> viewModel.startDownloadAsrModel(type) },
-            onCancelDownload = { viewModel.cancelDownloadAsrModel() }
-        )
-    }
-
     // Clear History Dialog
     if (showClearHistoryConfirm) {
         AlertDialog(
@@ -1459,14 +1410,17 @@ fun SettingsScreen(
         )
     }
 
+}
 
-            text = title,
-            color = DragonTheme.textSecondary,
-            fontSize = 12.5.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 0.3.sp
-        )
-    }
+@Composable
+private fun SettingsSectionHeader(title: String) {
+    Text(
+        text = title,
+        color = DragonTheme.textSecondary,
+        fontSize = 12.5.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 0.3.sp
+    )
 }
 
 @Composable
