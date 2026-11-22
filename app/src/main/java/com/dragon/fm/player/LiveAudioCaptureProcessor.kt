@@ -9,7 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * 实时广播音频截获处理器（基于 AndroidX Media3 BaseAudioProcessor）
  * 直接截取 ExoPlayer 解码后的纯数字 PCM 音频流，零网络开销，零环境杂音，无需麦克风录音权限。
- * 支持多路监听器分发（实时字幕识别 + 动态实时频谱分析）。
+ * 支持多路监听器分发（用于动态实时频谱分析）。
  */
 class LiveAudioCaptureProcessor : BaseAudioProcessor() {
 
