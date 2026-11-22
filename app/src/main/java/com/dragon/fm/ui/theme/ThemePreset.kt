@@ -199,6 +199,9 @@ class ThemePreset(
         glassSurface = Color(0xCC1D1019),
         glassBorder = Color(0xFF382030)
     )
+        fun fromId(id: String): ThemePreset = PRESETS.firstOrNull { it.id == id } ?: LUNAR_LIGHT
+        val lightPresets: List<ThemePreset> get() = PRESETS.filter { !it.isDark }
+        val darkPresets: List<ThemePreset> get() = PRESETS.filter { it.isDark }
     }
 
     fun withPrimary(color: Color): ThemePreset = ThemePreset(
@@ -211,14 +214,9 @@ class ThemePreset(
     )
 
 
-    companion object {
         private val PRESETS = listOf(
             LUNAR_LIGHT, PORCELAIN_JADE, SUNLIT_AMBER, CHERRY_BLOSSOM, FROSTED_SILVER, MATCHA_MIST, SODA_OBSIDIAN, VINTAGE_AMBER, AURORA_EMERALD, CYBER_NEON, SUNSET_GLOW
         )
-        fun fromId(id: String): ThemePreset = PRESETS.firstOrNull { it.id == id } ?: LUNAR_LIGHT
-        val lightPresets: List<ThemePreset> get() = PRESETS.filter { !it.isDark }
-        val darkPresets: List<ThemePreset> get() = PRESETS.filter { it.isDark }
-    }
 }
 
 val LocalDragonTheme = staticCompositionLocalOf { ThemePreset.LUNAR_LIGHT }
