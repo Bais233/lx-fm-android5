@@ -247,14 +247,6 @@ fun StudioDrawerSheet(
     var dragCurrentPosition by remember { mutableStateOf(Offset.Zero) }
     var dragTouchAnchor by remember { mutableStateOf(Offset.Zero) }
 
-    val currentDensity = LocalDensity.current
-    val customDensity = remember(currentDensity, fontScale) {
-        androidx.compose.ui.unit.Density(
-            density = currentDensity.density,
-            fontScale = currentDensity.fontScale * fontScale
-        )
-    }
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -270,9 +262,6 @@ fun StudioDrawerSheet(
             )
         }
     ) {
-        androidx.compose.runtime.CompositionLocalProvider(
-            LocalDensity provides customDensity
-        ) {
             Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1427,7 +1416,6 @@ fun StudioDrawerSheet(
             containerColor = DragonTheme.surface,
             shape = RoundedCornerShape(16.dp)
         )
-    }
 }
 
 /**
