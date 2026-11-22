@@ -17,18 +17,12 @@ import com.dragon.fm.data.model.PlaybackStatus
 import com.dragon.fm.data.model.PlayerState
 import com.dragon.fm.data.model.RadioStation
 import com.dragon.fm.data.model.StreamLine
-import com.dragon.fm.data.model.RecognitionMode
-import com.dragon.fm.data.model.RecognitionState
 import com.dragon.fm.data.model.RecognizedSong
 import com.dragon.fm.data.model.LiveSongLyricsState
-import com.dragon.fm.data.model.LyricsDisplayMode
 import com.dragon.fm.player.DragonRadioPlayer
-import com.dragon.fm.player.MusicRecognitionManager
 import com.dragon.fm.player.RecordedFile
 import com.dragon.fm.player.RecorderManager
 import com.dragon.fm.player.SleepTimerManager
-import com.dragon.fm.player.AsrModelType
-import com.dragon.fm.player.AsrModelState
 import com.dragon.fm.ui.theme.ThemePreset
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -59,8 +53,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val player: DragonRadioPlayer = app.radioPlayer
     val favoritesRepo: FavoritesRepository = app.favoritesRepository
     val recorderManager: RecorderManager = app.recorderManager
-    val recognitionManager: MusicRecognitionManager = app.musicRecognitionManager
-    val subtitleManager: com.dragon.fm.player.LiveStreamSubtitleManager = app.subtitleManager
     val audioSpectrumManager: com.dragon.fm.player.AudioSpectrumManager = app.audioSpectrumManager
     val audioSpectrum: StateFlow<FloatArray> = audioSpectrumManager.spectrumBands
     val audioPeaks: StateFlow<FloatArray> = audioSpectrumManager.spectrumPeaks
@@ -94,32 +86,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val localRecordingPositionMs: StateFlow<Long> = localRecordingPlayer.currentPositionMs
     val localRecordingDurationMs: StateFlow<Long> = localRecordingPlayer.durationMs
     val localRecordingSpeed: StateFlow<Float> = localRecordingPlayer.playbackSpeed
-    val recognitionState: StateFlow<RecognitionState> = recognitionManager.state
-    val recognitionHistory: StateFlow<List<RecognizedSong>> = recognitionManager.history
-
-    // Live AI Subtitles & Lyrics Flow State
-    val subtitleState = subtitleManager.subtitleState
+    // Static song lyrics
     private val _isLyricsModeActive = MutableStateFlow(false)
     val isLyricsModeActive: StateFlow<Boolean> = _isLyricsModeActive.asStateFlow()
 
     // Live Synchronized Song Lyrics
     val songLyricManager = com.dragon.fm.player.LiveSongLyricManager(viewModelScope)
     val songLyricState: StateFlow<LiveSongLyricsState> = songLyricManager.lyricsState
-
-    private val _lyricsDisplayMode = MutableStateFlow(LyricsDisplayMode.AI_SUBTITLE)
-    val lyricsDisplayMode: StateFlow<LyricsDisplayMode> = _lyricsDisplayMode.asStateFlow()
-
-    fun setLyricsDisplayMode(mode: LyricsDisplayMode) {
-        _lyricsDisplayMode.value = mode
-    }
-
-    fun toggleLyricsDisplayMode() {
-        _lyricsDisplayMode.value = if (_lyricsDisplayMode.value == LyricsDisplayMode.SONG_LYRICS) {
-            LyricsDisplayMode.AI_SUBTITLE
-        } else {
-            LyricsDisplayMode.SONG_LYRICS
-        }
-    }
 
     // Navigation routing support
     private val _targetScreenRoute = MutableStateFlow<String?>(null)
@@ -133,118 +106,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _targetScreenRoute.value = null
     }
 
-    // Offline Sherpa-ONNX ASR Model Management
-    val asrModelState = subtitleManager.asrModelManager.modelState
-    val currentAsrModelType: StateFlow<AsrModelType> = subtitleManager.asrModelManager.currentModelType
-    private val _showAsrDownloadDialog = MutableStateFlow(false)
-    val showAsrDownloadDialog: StateFlow<Boolean> = _showAsrDownloadDialog.asStateFlow()
-
-    fun openAsrDownloadDialog() {
-        _showAsrDownloadDialog.value = true
-    }
-
-    fun closeAsrDownloadDialog() {
-        _showAsrDownloadDialog.value = false
-    }
-
-    fun setAsrModelType(type: AsrModelType) {
-        subtitleManager.asrModelManager.setSelectedModelType(type)
-    }
-
-    fun startDownloadAsrModel(modelType: AsrModelType? = null) {
-        val target = modelType ?: subtitleManager.asrModelManager.currentModelType.value
-        subtitleManager.asrModelManager.startDownload(target) { success ->
-            if (success) {
-                _showAsrDownloadDialog.value = false
-                setLyricsModeActive(true)
-            }
-        }
-    }
-
-    fun cancelDownloadAsrModel() {
-        subtitleManager.asrModelManager.cancelDownload()
-    }
-
-    fun deleteAsrModel(deleteEngineAlso: Boolean = false): Boolean {
-        if (_isLyricsModeActive.value) {
-            setLyricsModeActive(false)
-        }
-        return subtitleManager.asrModelManager.deleteModel(deleteEngineAlso)
-    }
-
-    private var lastLyricsToggleTime = 0L
-
-    fun toggleLyricsMode() {
-        val now = System.currentTimeMillis()
-        if (now - lastLyricsToggleTime < 400L) return
-        lastLyricsToggleTime = now
-
-        if (!_isLyricsModeActive.value) {
-            if (!subtitleManager.asrModelManager.isModelReady()) {
-                _showAsrDownloadDialog.value = true
-            } else {
-                setLyricsModeActive(true)
-            }
-        } else {
-            setLyricsModeActive(false)
-        }
-    }
-
-    fun setLyricsModeActive(active: Boolean) {
-        if (active) {
-            if (!subtitleManager.asrModelManager.isModelReady()) {
-                _showAsrDownloadDialog.value = true
-                return
-            }
-            _isLyricsModeActive.value = true
-            subtitleManager.setSubtitleEnabled(true, player.liveAudioCaptureProcessor)
-        } else {
-            // 切回封面模式，保持底层语音转写继续运行，供封面下方单行歌词条实时展示
-            _isLyricsModeActive.value = false
-        }
-    }
-
-    fun setSubtitleEnabled(enabled: Boolean) {
-        if (!enabled) {
-            _isLyricsModeActive.value = false
-            subtitleManager.setSubtitleEnabled(false, player.liveAudioCaptureProcessor)
-        } else {
-            if (!subtitleManager.asrModelManager.isModelReady()) {
-                _showAsrDownloadDialog.value = true
-                return
-            }
-            subtitleManager.setSubtitleEnabled(true, player.liveAudioCaptureProcessor)
-        }
-    }
-
     fun onStationChangedForSubtitle() {
-        subtitleManager.onStationChanged()
         songLyricManager.onStationChanged()
-        _lyricsDisplayMode.value = LyricsDisplayMode.AI_SUBTITLE
-    }
-
-    fun toggleSubtitleEnabled() {
-        if (subtitleState.value.isEnabled) {
-            setSubtitleEnabled(false)
-        } else {
-            setSubtitleEnabled(true)
-        }
-    }
-
-    fun clearSubtitles() {
-        subtitleManager.clearSubtitles()
-    }
-
-    fun setSubtitleFontSize(sizeSp: Float) {
-        subtitleManager.setFontSize(sizeSp)
-    }
-
-    fun copyAllSubtitles() {
-        subtitleManager.copyAllSubtitles()
-    }
-
-    fun copySingleSubtitle(text: String) {
-        subtitleManager.copySingleSubtitle(text)
     }
 
     // 1. 播放页自定义设置 (封面样式、频道标签、律动频谱、功能按钮)
@@ -329,20 +192,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit().putString("pref_swipe_left_action", action.id).apply()
     }
 
-    // 3. 实时字幕与歌词设置 (总开关与字号调节)
-    private val _showLiveSubtitles = MutableStateFlow(
-        prefs.getBoolean("pref_show_live_subtitles", true)
-    )
-    val showLiveSubtitles: StateFlow<Boolean> = _showLiveSubtitles.asStateFlow()
-
-    fun setShowLiveSubtitles(show: Boolean) {
-        _showLiveSubtitles.value = show
-        prefs.edit().putBoolean("pref_show_live_subtitles", show).apply()
-        if (!show) {
-            setSubtitleEnabled(false)
-        }
-    }
-
     private val _subtitleFontSizeOption = MutableStateFlow(
         SubtitleFontSize.fromId(prefs.getString("pref_subtitle_font_size", SubtitleFontSize.STANDARD.id) ?: SubtitleFontSize.STANDARD.id)
     )
@@ -351,7 +200,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setSubtitleFontSizeOption(option: SubtitleFontSize) {
         _subtitleFontSizeOption.value = option
         prefs.edit().putString("pref_subtitle_font_size", option.id).apply()
-        setSubtitleFontSize(option.activeSp)
     }
 
     // 5. 是否开启版本更新检测提醒设置 (默认开启，关闭后不自动弹窗提醒)
@@ -373,13 +221,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _debugModeEnabled.value = enable
         prefs.edit().putBoolean("pref_debug_mode", enable).apply()
     }
-
-    // Music recognition dialog visibility
-    private val _showRecognitionDialog = MutableStateFlow(false)
-    val showRecognitionDialog: StateFlow<Boolean> = _showRecognitionDialog.asStateFlow()
-
-    private val _currentRecognitionMode = MutableStateFlow(RecognitionMode.RADIO_STREAM)
-    val currentRecognitionMode: StateFlow<RecognitionMode> = _currentRecognitionMode.asStateFlow()
 
     // Exclusion filter states
     val isDomesticOnly: StateFlow<Boolean> = exclusionManager.isDomesticOnly
@@ -505,6 +346,42 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _selectedLightThemeId.value = theme.id
             prefs.edit().putString("pref_selected_light_theme", theme.id).apply()
         }
+    }
+
+    private val _appearanceMode = MutableStateFlow(
+        prefs.getString("pref_appearance_mode", null)
+            ?: if (_isFollowSystemTheme.value) "SYSTEM" else "MANUAL"
+    )
+    val appearanceMode: StateFlow<String> = _appearanceMode.asStateFlow()
+    private val _appearanceDayStart = MutableStateFlow(prefs.getInt("pref_appearance_day", 7 * 60))
+    val appearanceDayStart: StateFlow<Int> = _appearanceDayStart.asStateFlow()
+    private val _appearanceNightStart = MutableStateFlow(prefs.getInt("pref_appearance_night", 19 * 60))
+    val appearanceNightStart: StateFlow<Int> = _appearanceNightStart.asStateFlow()
+    private val _appearanceLatitude = MutableStateFlow(prefs.getFloat("pref_appearance_latitude", 31.2304f).toDouble())
+    val appearanceLatitude: StateFlow<Double> = _appearanceLatitude.asStateFlow()
+    private val _appearanceLongitude = MutableStateFlow(prefs.getFloat("pref_appearance_longitude", 121.4737f).toDouble())
+    val appearanceLongitude: StateFlow<Double> = _appearanceLongitude.asStateFlow()
+
+    fun setAppearanceMode(mode: String) {
+        _appearanceMode.value = mode
+        _isFollowSystemTheme.value = mode == "SYSTEM"
+        prefs.edit().putString("pref_appearance_mode", mode)
+            .putBoolean("pref_follow_system_theme", mode == "SYSTEM").apply()
+    }
+
+    fun setAppearanceSchedule(dayMinutes: Int, nightMinutes: Int) {
+        require(dayMinutes in 0..1439 && nightMinutes in 0..1439) { "时间必须介于 00:00 至 23:59" }
+        _appearanceDayStart.value = dayMinutes
+        _appearanceNightStart.value = nightMinutes
+        prefs.edit().putInt("pref_appearance_day", dayMinutes).putInt("pref_appearance_night", nightMinutes).apply()
+    }
+
+    fun setAppearanceLocation(latitude: Double, longitude: Double) {
+        require(latitude in -90.0..90.0 && longitude in -180.0..180.0) { "纬度或经度超出范围" }
+        _appearanceLatitude.value = latitude
+        _appearanceLongitude.value = longitude
+        prefs.edit().putFloat("pref_appearance_latitude", latitude.toFloat())
+            .putFloat("pref_appearance_longitude", longitude.toFloat()).apply()
     }
 
     // App Background Wallpapers & Presets
@@ -749,7 +626,86 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return size
     }
 
-    // Gitee In-App Update Engine
+    private val _customPrimaryColor = MutableStateFlow<Long?>(
+        prefs.getString("pref_custom_primary", null)?.toLongOrNull(16)
+    )
+    val customPrimaryColor: StateFlow<Long?> = _customPrimaryColor.asStateFlow()
+
+    fun setCustomPrimaryColor(color: Long?) {
+        _customPrimaryColor.value = color
+        if (color == null) prefs.edit().remove("pref_custom_primary").apply()
+        else prefs.edit().putString("pref_custom_primary", color.toString(16).padStart(8, '0')).apply()
+    }
+
+    private val _interfaceScale = MutableStateFlow(prefs.getFloat("pref_interface_scale", 1f))
+    val interfaceScale: StateFlow<Float> = _interfaceScale.asStateFlow()
+
+    fun setInterfaceScale(scale: Float) {
+        val clamped = scale.coerceIn(0.85f, 1.20f)
+        _interfaceScale.value = clamped
+        prefs.edit().putFloat("pref_interface_scale", clamped).apply()
+    }
+
+    private val _customFontName = MutableStateFlow<String?>(prefs.getString("pref_custom_font_name", null))
+    val customFontName: StateFlow<String?> = _customFontName.asStateFlow()
+    private var customFontFile: java.io.File? = null
+    private var customFontLoadFailed = false
+
+    fun getCustomFontFile(): java.io.File? {
+        if (customFontFile == null && !customFontLoadFailed) {
+            try {
+                val file = java.io.File(getApplication<Application>().filesDir, "custom-font")
+                if (!file.isFile) return null
+                android.graphics.Typeface.createFromFile(file)
+                customFontFile = file
+            } catch (_: Exception) {
+                customFontLoadFailed = true
+                return null
+            }
+        }
+        return customFontFile
+    }
+
+    fun importCustomFont(uri: android.net.Uri): String? {
+        val app = getApplication<Application>()
+        return try {
+            val target = java.io.File(app.filesDir, "custom-font.tmp")
+            app.contentResolver.openInputStream(uri)?.use { input ->
+                target.outputStream().use { output -> input.copyTo(output) }
+            } ?: return "无法读取所选字体"
+            if (target.length() == 0L || target.length() > 20 * 1024 * 1024) {
+                target.delete()
+                return "字体为空或超过 20 MB"
+            }
+            android.graphics.Typeface.createFromFile(target)
+            val finalFile = java.io.File(app.filesDir, "custom-font")
+            if (!target.renameTo(finalFile)) {
+                target.copyTo(finalFile, overwrite = true)
+                target.delete()
+            }
+            customFontFile = finalFile
+            customFontLoadFailed = false
+            val name = app.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0) else null
+            } ?: "自定义字体"
+            _customFontName.value = name
+            prefs.edit().putString("pref_custom_font_name", name).apply()
+            null
+        } catch (_: Exception) {
+            java.io.File(app.filesDir, "custom-font.tmp").delete()
+            "无法识别字体，请选择有效的 TTF 或 OTF 文件"
+        }
+    }
+
+    fun clearCustomFont() {
+        customFontFile = null
+        customFontLoadFailed = false
+        _customFontName.value = null
+        java.io.File(getApplication<Application>().filesDir, "custom-font").delete()
+        prefs.edit().remove("pref_custom_font_name").apply()
+    }
+
+    // GitHub Release 应用内更新
     val updateManager = AppUpdateManager(application)
 
     private val _updateCheckResult = MutableStateFlow<UpdateCheckResult>(UpdateCheckResult.Idle)
@@ -930,56 +886,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _updateCheckResult.value = res
             if (res is UpdateCheckResult.HasUpdate) {
                 _showUpdateDialog.value = true
-            }
-        }
-
-        // Listen to music recognition results to sync Now Playing track & trigger floating banner / failure toasts
-        viewModelScope.launch {
-            recognitionState.collect { state ->
-                when (state) {
-                    is RecognitionState.Success -> {
-                        applyRecognizedSongToNowPlaying(state.song)
-                        _floatingRecognizedSong.value = state.song
-                        // 识别成功后自动启动时间轴歌词同步并切换为歌曲歌词模式
-                        songLyricManager.startSync(state.song)
-                        _lyricsDisplayMode.value = LyricsDisplayMode.SONG_LYRICS
-                        showToast("已识别: 《${state.song.title}》 - ${state.song.artist}")
-                        delay(3500)
-                        if (recognitionState.value is RecognitionState.Success) {
-                            recognitionManager.resetState()
-                        }
-                    }
-                    is RecognitionState.NoMatch -> {
-                        val tip = state.message.ifBlank { "当前广播未识别到歌曲（可能正处于主持人口播、新闻或广告）" }
-                        showToast(tip)
-                        delay(2500)
-                        if (recognitionState.value is RecognitionState.NoMatch) {
-                            recognitionManager.resetState()
-                        }
-                    }
-                    is RecognitionState.Error -> {
-                        val tip = if (state.message.contains("采样数据不足") || state.message.contains("有效音频长度")) {
-                            "电台流采样数据不足，请确保电台播放流畅后重试"
-                        } else {
-                            "识曲未完成: ${state.message}"
-                        }
-                        showToast(tip)
-                        delay(2500)
-                        if (recognitionState.value is RecognitionState.Error) {
-                            recognitionManager.resetState()
-                        }
-                    }
-                    else -> {}
-                }
-            }
-        }
-
-        // 监听歌曲歌词同步状态，当歌曲自然播放完毕时自动切回实时语音字幕伴听模式
-        viewModelScope.launch {
-            songLyricState.collect { lState ->
-                if (!lState.isActive && _lyricsDisplayMode.value == LyricsDisplayMode.SONG_LYRICS && lState.errorMessage == "歌曲播放完毕") {
-                    _lyricsDisplayMode.value = LyricsDisplayMode.AI_SUBTITLE
-                }
             }
         }
 
@@ -2446,74 +2352,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // ================= Music Recognition (听歌识曲) =================
-    private val _floatingRecognizedSong = MutableStateFlow<RecognizedSong?>(null)
-    val floatingRecognizedSong: StateFlow<RecognizedSong?> = _floatingRecognizedSong.asStateFlow()
-
     fun showToast(message: String) {
         viewModelScope.launch(Dispatchers.Main) {
             try {
                 android.widget.Toast.makeText(getApplication(), message, android.widget.Toast.LENGTH_SHORT).show()
             } catch (_: Exception) {}
         }
-    }
-
-    fun dismissFloatingRecognizedSong() {
-        _floatingRecognizedSong.value = null
-    }
-
-    /**
-     * 极简听歌识曲切换：
-     * 无需弹窗、无需麦克风环境拾音，直接捕获播放器原生音频流；
-     * 状态完全反馈在界面按钮自身（识别中/已识别/重试）。
-     */
-    fun toggleMusicRecognition() {
-        val curState = recognitionState.value
-        if (curState is RecognitionState.Sampling || curState is RecognitionState.Fingerprinting || curState is RecognitionState.QueryingCloud) {
-            recognitionManager.resetState()
-            showToast("已停止识曲")
-            return
-        }
-
-        val station = playerState.value.currentStation
-        if (playerState.value.status != PlaybackStatus.PLAYING || station == null) {
-            showToast("当前广播未播放，请先播放电台")
-            return
-        }
-
-        recognitionManager.resetState()
-        _currentRecognitionMode.value = RecognitionMode.RADIO_STREAM
-        recognitionManager.recognizeCurrentStation(station, player.liveAudioCaptureProcessor)
-    }
-
-    fun startSilentRecognition() {
-        toggleMusicRecognition()
-    }
-
-    fun openMusicRecognition(preferredMode: RecognitionMode? = null) {
-        toggleMusicRecognition()
-    }
-
-    fun closeMusicRecognition() {
-        _showRecognitionDialog.value = false
-        recognitionManager.resetState()
-    }
-
-    fun startMusicRecognition(mode: RecognitionMode) {
-        toggleMusicRecognition()
-    }
-
-    fun applyRecognizedSongToNowPlaying(song: RecognizedSong) {
-        val title = "${song.title} - ${song.artist}"
-        player.updateNowPlayingTitle(title)
-    }
-
-    fun deleteRecognizedSong(id: String) {
-        recognitionManager.deleteSong(id)
-    }
-
-    fun clearRecognitionHistory() {
-        recognitionManager.clearHistory()
     }
 
     fun setSleepTimer(minutes: Int) {
