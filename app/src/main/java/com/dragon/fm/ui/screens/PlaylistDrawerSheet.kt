@@ -104,13 +104,7 @@ fun PlaylistDrawerSheet(
     var draggingStationId by remember { mutableStateOf<String?>(null) }
     var dragAccumulatedY by remember { mutableStateOf(0f) }
 
-    val currentDensity = LocalDensity.current
-    val customDensity = remember(currentDensity, fontScale) {
-        androidx.compose.ui.unit.Density(
-            density = currentDensity.density,
-            fontScale = currentDensity.fontScale * fontScale
-        )
-    }
+    val customDensity = LocalDensity.current
     val itemHeightPx = with(customDensity) { 68.dp.toPx() }
 
     // Smoothly scroll to current playing item when sheet opens
@@ -136,9 +130,6 @@ fun PlaylistDrawerSheet(
             )
         }
     ) {
-        androidx.compose.runtime.CompositionLocalProvider(
-            LocalDensity provides customDensity
-        ) {
             Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -697,5 +688,4 @@ private fun PlaylistItem(
                 }
             }
         }
-    }
 }
