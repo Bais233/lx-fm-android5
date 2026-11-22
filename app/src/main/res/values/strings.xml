@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">LX FM 5.1</string>
+    <string name="channel_name">电台播放</string>
+    <string name="channel_description">后台播放广播电台时显示的通知</string>
 </resources>
