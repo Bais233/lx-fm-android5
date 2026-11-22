@@ -11,7 +11,6 @@ import com.dragon.fm.data.model.AppUpdateInfo
 import com.dragon.fm.data.model.UpdateCheckResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -22,11 +21,8 @@ import java.util.concurrent.TimeUnit
 class AppUpdateManager(private val context: Context) {
 
     companion object {
-        const val GITEE_VERSION_URL = "https://gitee.com/app-finder/LX-FM/raw/master/version.json"
-        const val GITEE_REPO_URL = "https://gitee.com/app-finder/LX-FM"
+        const val GITHUB_RELEASE_URL = "https://api.github.com/repos/Bais233/lx-fm-android5/releases/latest"
     }
-
-    private val json = Json { ignoreUnknownKeys = true }
 
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
@@ -70,27 +66,26 @@ class AppUpdateManager(private val context: Context) {
 
     suspend fun checkUpdate(isManual: Boolean = false): UpdateCheckResult = withContext(Dispatchers.IO) {
         try {
-            val cacheBusterUrl = if (GITEE_VERSION_URL.contains("?")) {
-                "$GITEE_VERSION_URL&t=${System.currentTimeMillis()}"
-            } else {
-                "$GITEE_VERSION_URL?t=${System.currentTimeMillis()}"
-            }
             val request = Request.Builder()
-                .url(cacheBusterUrl)
+                .url(GITHUB_RELEASE_URL)
+                .header("Accept", "application/vnd.github+json")
                 .header("User-Agent", "LX-FM-Android/${getCurrentVersionName()}")
                 .header("Cache-Control", "no-cache, no-store, must-revalidate")
                 .header("Pragma", "no-cache")
                 .build()
 
             httpClient.newCall(request).execute().use { response ->
+                if (response.code == 404) {
+                    return@withContext UpdateCheckResult.Error("仓库尚未发布 Release", isManual)
+                }
                 if (!response.isSuccessful) {
-                    return@withContext UpdateCheckResult.Error("检测更新失败 HTTP ${response.code}", isManual)
+                    return@withContext UpdateCheckResult.Error("GitHub 更新检查请求失败 HTTP ${response.code}", isManual)
                 }
 
                 val bodyStr = response.body?.string()
                     ?: return@withContext UpdateCheckResult.Error("获取更新信息为空", isManual)
 
-                val updateInfo = json.decodeFromString<AppUpdateInfo>(bodyStr)
+                val updateInfo = GitHubReleaseParser.parse(bodyStr)
                 val currentCode = getCurrentVersionCode()
 
                 if (updateInfo.versionCode > currentCode) {
