@@ -199,6 +199,7 @@ class ThemePreset(
         glassSurface = Color(0xCC1D1019),
         glassBorder = Color(0xFF382030)
     )
+    }
 
     fun withPrimary(color: Color): ThemePreset = ThemePreset(
         id = id, title = title, subtitle = subtitle,
@@ -210,6 +211,7 @@ class ThemePreset(
     )
 
 
+    companion object {
         private val PRESETS = listOf(
             LUNAR_LIGHT, PORCELAIN_JADE, SUNLIT_AMBER, CHERRY_BLOSSOM, FROSTED_SILVER, MATCHA_MIST, SODA_OBSIDIAN, VINTAGE_AMBER, AURORA_EMERALD, CYBER_NEON, SUNSET_GLOW
         )
