@@ -517,7 +517,7 @@ fun RadarExploreScreen(
                     }
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "发现电台 • LX FM 雷达",
+                        text = "发现电台 • Bais FM 雷达",
                         color = DragonTheme.textPrimary,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold

@@ -159,7 +159,7 @@ fun SleepModeOverlay(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = playerState.currentStation?.name ?: "LX FM",
+                        text = playerState.currentStation?.name ?: "Bais FM",
                         color = DragonCyan.copy(alpha = 0.90f),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -346,7 +346,7 @@ fun SleepModeOverlay(
 
                 // Station Name
                 Text(
-                    text = playerState.currentStation?.name ?: "LX FM",
+                    text = playerState.currentStation?.name ?: "Bais FM",
                     color = DragonCyan.copy(alpha = 0.88f),
                     fontSize = 16.5.sp,
                     fontWeight = FontWeight.SemiBold,

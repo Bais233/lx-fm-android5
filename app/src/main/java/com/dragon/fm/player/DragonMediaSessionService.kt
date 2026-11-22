@@ -218,7 +218,7 @@ class DragonMediaSessionService : Service() {
             }
             .setContentTitle(station.name)
             .setContentText(subtitle)
-            .setSubText("LIVE • ${station.formattedRegion} • LX FM")
+            .setSubText("LIVE • ${station.formattedRegion} • Bais FM")
             .setContentIntent(contentIntent)
             .setDeleteIntent(stopIntent)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

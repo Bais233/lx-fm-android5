@@ -1158,6 +1158,12 @@ fun SettingsScreen(
                         actionLabel = "访问",
                         onClick = openGitHubRepo
                     )
+                    HorizontalDivider(color = DragonTheme.glassBorder, thickness = 0.5.dp)
+                    SettingsInfoRow(
+                        title = "关于应用",
+                        subtitle = "Bais FM · 面向 Android 5.1 的开放电台播放器 · 基于 LX-FM (Apache-2.0) 精简移植",
+                        statusText = "作者 Bais233"
+                    )
                 }
                 Spacer(modifier = Modifier.height(18.dp))
             }

@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+import android.os.SystemClock
+
 class SleepTimerManager(private val onTimerExpired: () -> Unit) {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var timerJob: Job? = null
@@ -23,15 +25,16 @@ class SleepTimerManager(private val onTimerExpired: () -> Unit) {
     fun startTimer(minutes: Int) {
         cancelTimer()
         _selectedMinutes.value = minutes
-        val totalSec = minutes * 60
-        _remainingSeconds.value = totalSec
+        val deadlineMs = SleepTimerClock.deadlineAfterMinutes(minutes, SystemClock.elapsedRealtime())
+        _remainingSeconds.value = SleepTimerClock.remainingSeconds(deadlineMs, SystemClock.elapsedRealtime())
 
         timerJob = scope.launch {
-            var currentSec = totalSec
-            while (isActive && currentSec > 0) {
-                delay(1000)
-                currentSec -= 1
-                _remainingSeconds.value = currentSec
+            while (isActive) {
+                val nowMs = SystemClock.elapsedRealtime()
+                val remainingSec = SleepTimerClock.remainingSeconds(deadlineMs, nowMs)
+                if (remainingSec <= 0) break
+                _remainingSeconds.value = remainingSec
+                delay((deadlineMs - nowMs).coerceAtMost(1000L))
             }
             _remainingSeconds.value = null
             _selectedMinutes.value = null

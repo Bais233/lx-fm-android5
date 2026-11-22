@@ -725,7 +725,7 @@ fun DragonFlowScreen(
 
                 Text(
 
-                    text = "退出 LX FM",
+                    text = "退出 Bais FM",
 
                     color = DragonTheme.textPrimary,
 
@@ -1183,7 +1183,7 @@ private fun LandscapeTabletFlowContent(
 
                                 Text(
 
-                                    text = if (isCompactLandscape) "LX FM • 横屏沉浸" else "大屏平板 • LX FM 沉浸",
+                                    text = if (isCompactLandscape) "Bais FM • 横屏沉浸" else "大屏平板 • Bais FM 沉浸",
 
                                     color = DragonTheme.textPrimary,
 
@@ -1332,7 +1332,7 @@ private fun LandscapeTabletFlowContent(
 
 
                     Text(
-                        text = currentStation?.name ?: "LX FM",
+                        text = currentStation?.name ?: "Bais FM",
                         color = DragonTheme.textPrimary,
                         fontSize = if (isCompactLandscape) 15.sp else 18.sp,
                         fontWeight = FontWeight.Bold,

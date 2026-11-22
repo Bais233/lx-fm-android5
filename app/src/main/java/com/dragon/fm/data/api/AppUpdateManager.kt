@@ -109,8 +109,8 @@ class AppUpdateManager(private val context: Context) {
 
             val targetUrl = updateInfo.resolveBestDownloadUrl()
             val matchedAbi = updateInfo.getResolvedAbiName()
-            val finalFile = File(downloadDir, "LX_FM_v${updateInfo.versionName}_${matchedAbi}.apk")
-            val tempFile = File(downloadDir, "LX_FM_v${updateInfo.versionName}_${matchedAbi}.apk.tmp")
+            val finalFile = File(downloadDir, "BaisFM_v${updateInfo.versionName}_${matchedAbi}.apk")
+            val tempFile = File(downloadDir, "BaisFM_v${updateInfo.versionName}_${matchedAbi}.apk.tmp")
 
             if (tempFile.exists()) tempFile.delete()
 
