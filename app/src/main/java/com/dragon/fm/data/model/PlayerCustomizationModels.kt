@@ -51,9 +51,7 @@ enum class QuickActionButton(
 ) {
     FAVORITE("favorite", "收藏", Icons.Outlined.Star, true),
     RECORD("record", "录音", Icons.Outlined.Mic, true),
-    RECOGNITION("recognition", "识曲", Icons.Outlined.GraphicEq, true),
     SLEEP("sleep", "睡眠", Icons.Outlined.NightsStay, true),
-    CAR("car", "车载", Icons.Outlined.DirectionsCar, true),
     SOUND_EFFECT("sound_effect", "音效", Icons.Outlined.Equalizer, true),
     PLAYLIST("playlist", "列表", Icons.Outlined.QueueMusic, true);
 
@@ -61,13 +59,13 @@ enum class QuickActionButton(
         fun fromId(id: String): QuickActionButton? = entries.firstOrNull { it.id == id }
 
         val defaultList: List<QuickActionButton> = listOf(
-            FAVORITE, RECORD, RECOGNITION, SLEEP, CAR, SOUND_EFFECT, PLAYLIST
+            FAVORITE, RECORD, SLEEP, SOUND_EFFECT, PLAYLIST
         )
     }
 }
 
 /**
- * 实时字幕字号选项
+ * 歌词字号选项
  */
 enum class SubtitleFontSize(val id: String, val title: String, val activeSp: Float, val historySp: Float) {
     COMPACT("compact", "小号字体 (19sp / 紧凑排版)", 19f, 14f),
