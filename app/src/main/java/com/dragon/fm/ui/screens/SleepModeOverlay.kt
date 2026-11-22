@@ -62,8 +62,8 @@ import com.dragon.fm.ui.theme.DragonGold
 import com.dragon.fm.ui.theme.LiveRed
 import com.dragon.fm.ui.theme.SurfaceDark
 import kotlinx.coroutines.delay
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 @Composable
@@ -82,9 +82,9 @@ fun SleepModeOverlay(
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     LaunchedEffect(Unit) {
-        val formatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+        val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
         while (true) {
-            currentTimeStr = LocalTime.now().format(formatter)
+            currentTimeStr = formatter.format(Date())
             delay(1000)
         }
     }
