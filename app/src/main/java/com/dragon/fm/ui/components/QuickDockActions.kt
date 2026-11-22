@@ -23,7 +23,6 @@ import androidx.compose.foundation.border
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Bedtime
-import androidx.compose.material.icons.outlined.DirectionsCar
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.FiberManualRecord
 import androidx.compose.material.icons.outlined.Tune
@@ -55,8 +54,7 @@ fun QuickDockActions(
     onToggleFavorite: () -> Unit,
     onToggleRecording: () -> Unit,
     onOpenSleepTimer: () -> Unit,
-    onOpenStudio: () -> Unit,
-    onOpenCarMode: () -> Unit
+    onOpenStudio: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "rec_blink")
     val recAlpha by infiniteTransition.animateFloat(
@@ -147,13 +145,6 @@ fun QuickDockActions(
             onClick = onOpenStudio
         )
 
-        // 5. Car HUD Mode
-        ActionButtonItem(
-            icon = Icons.Outlined.DirectionsCar,
-            iconTint = DragonTheme.textPrimary,
-            label = "车载",
-            onClick = onOpenCarMode
-        )
     }
 }
 
