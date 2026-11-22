@@ -183,7 +183,7 @@ class DragonMediaSessionService : MediaSessionService() {
                 Log.d(TAG, "[Action] STOP")
                 playerStateCollectJob?.cancel()
                 app?.radioPlayer?.stop()
-                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopForegroundCompat(true)
                 notificationManager?.cancel(NOTIFICATION_ID)
                 stopSelf()
             }
@@ -198,14 +198,14 @@ class DragonMediaSessionService : MediaSessionService() {
         val app = applicationContext as? DragonFmApp ?: return
         val playerState = app.radioPlayer.playerState.value
         if (playerState.status == PlaybackStatus.IDLE) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopForegroundCompat(true)
             notificationManager?.cancel(NOTIFICATION_ID)
             return
         }
         val isPlaying = playerState.status == PlaybackStatus.PLAYING
         val isBuffering = playerState.status == PlaybackStatus.BUFFERING
         val station = playerState.currentStation ?: run {
-            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopForegroundCompat(true)
             notificationManager?.cancel(NOTIFICATION_ID)
             return
         }
@@ -331,12 +331,21 @@ class DragonMediaSessionService : MediaSessionService() {
                     startForeground(NOTIFICATION_ID, notification)
                 }
             } else {
-                stopForeground(STOP_FOREGROUND_DETACH)
+                stopForegroundCompat(false)
                 notificationManager?.notify(NOTIFICATION_ID, notification)
             }
         } catch (e: Exception) {
             Log.w(TAG, "[Notification] startForeground failed, falling back to notify: ${e.message}")
             notificationManager?.notify(NOTIFICATION_ID, notification)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun stopForegroundCompat(removeNotification: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(if (removeNotification) STOP_FOREGROUND_REMOVE else STOP_FOREGROUND_DETACH)
+        } else {
+            stopForeground(removeNotification)
         }
     }
 
@@ -414,7 +423,7 @@ class DragonMediaSessionService : MediaSessionService() {
             app?.radioPlayer?.stop()
             instance?.run {
                 playerStateCollectJob?.cancel()
-                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopForegroundCompat(true)
                 notificationManager?.cancel(NOTIFICATION_ID)
                 stopSelf()
             }
